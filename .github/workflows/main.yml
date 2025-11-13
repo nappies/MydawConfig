@@ -10,18 +10,20 @@ jobs:
         uses: jmarrec/setup-qtifw@v1
         with:
           qtifw-version: '4.6.1'
+          target: 'mac'
+          arch: 'arm64'
       
-      - name: Build Installer # Create .app //
+      - name: Build Installer
         run: |
-          binarycreator --offline-only -p mydaw-installer/packages_mac -c mydaw-installer/config/config.xml MyDaw-Macos.app
+          binarycreator --offline-only -p mydaw-installer/packages_mac -c mydaw-installer/config/config.xml MyDaw-Macos-Arm64.app
       
-      - name: Create ZIP with .app as top-level
+      - name: Prepare for upload
         run: |
-          ditto -c -k --sequesterRsrc --keepParent MyDaw-Macos.app MyDaw-Macos.zip
+          mkdir -p upload
+          mv MyDaw-Macos-Arm64.app upload/
       
       - name: Upload Installer Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MyDaw-Macos
-          path: MyDaw-Macos.zip
-          compression-level: 0
+          name: MyDaw-Macos-Arm64
+          path: upload/
