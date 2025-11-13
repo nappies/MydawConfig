@@ -9,7 +9,7 @@ jobs:
       - name: Install Qt Installer Framework
         uses: jmarrec/setup-qtifw@v1  # Install latest Qt Installer Framework (QtIFW):contentReference[oaicite:0]{index=0}
         with:
-          qtifw-version: '4.x'
+          qtifw-version: '4.6.1'
       - name: Build Installer
         run: |
           binarycreator --offline-only -p packages -c mydaw-installer/config/config.xml MyAppInstaller.app  # Create an offline installer using packages and config:contentReference[oaicite:1]{index=1}
