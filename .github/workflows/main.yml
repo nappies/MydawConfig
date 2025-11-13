@@ -13,8 +13,31 @@ jobs:
       - name: Build Installer
         run: |
           binarycreator --offline-only -p mydaw-installer/packages_mac -c mydaw-installer/config/config.xml MyDaw-Macos-Arm64.app  # Create an offline installer using packages and config:contentReference[oaicite:1]{index=1}
-      - name: Upload Installer Artifact
+      - name: Verify built .app (debug)
+        run: |
+          echo "Listing built app:"
+          ls -la MyDaw-Macos-Arm64.app || (echo "App not found!" && exit 1)
+          echo "Contents snapshot:"
+          ls -la MyDaw-Macos-Arm64.app/Contents || true
+
+      - name: Create ZIP preserving .app as top-level (ditto)
+        run: |
+          ARTIFACT_NAME="MyDaw-Macos-Arm64"
+          ZIP_NAME="${ARTIFACT_NAME}.zip"
+
+          # Ensure we're packaging the .app directory itself (the --keepParent flag makes the .app a top-level entry)
+          if [ ! -d "${ARTIFACT_NAME}.app" ]; then
+            echo "ERROR: ${ARTIFACT_NAME}.app not found"; exit 1
+          fi
+
+          # Use ditto to preserve macOS resource forks and keep the parent folder inside the zip
+          ditto -c -k --sequesterRsrc --keepParent "${ARTIFACT_NAME}.app" "${ZIP_NAME}"
+
+          echo "Created zip:"
+          ls -la "${ZIP_NAME}"
+
+      - name: Upload Installer Artifact (zip)
         uses: actions/upload-artifact@v4
         with:
           name: MyDaw-Macos-Arm64
-          path: MyDaw-Macos-Arm64.app
+          path: MyDaw-Macos-Arm64.zip
