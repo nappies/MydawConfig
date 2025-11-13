@@ -1,4 +1,4 @@
-name: Build macOS Universal Installer
+name: Build macOS Arm Installer
 on: release
 jobs:
   build-installer:
