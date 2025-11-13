@@ -11,7 +11,7 @@ jobs:
         with:
           qtifw-version: '4.6.1'
       
-      - name: Build Installer # Create .app
+      - name: Build Installer # Create .app //
         run: |
           binarycreator --offline-only -p mydaw-installer/packages_mac -c mydaw-installer/config/config.xml MyDaw-Macos.app
       
