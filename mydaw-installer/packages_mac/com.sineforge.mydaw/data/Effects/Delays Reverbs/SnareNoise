@@ -1,0 +1,167 @@
+// (C) 2006-2007, Michael Gruhn.
+
+// NO WARRANTY IS GRANTED. THIS PLUG-IN IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+// WARRANTY OF ANY KIND. NO LIABILITY IS GRANTED, INCLUDING, BUT NOT LIMITED TO,
+// ANY DIRECT OR INDIRECT,  SPECIAL,  INCIDENTAL OR CONSEQUENTIAL DAMAGE ARISING
+// OUT OF  THE  USE  OR INABILITY  TO  USE  THIS PLUG-IN,  COMPUTER FAILTURE  OF
+// MALFUNCTION INCLUDED.  THE USE OF THE SOURCE CODE,  EITHER  PARTIALLY  OR  IN
+// TOTAL, IS ONLY GRANTED,  IF USED IN THE SENSE OF THE AUTHOR'S INTENTION,  AND
+// USED WITH ACKNOWLEDGEMENT OF THE AUTHOR. FURTHERMORE IS THIS PLUG-IN A  THIRD
+// PARTY CONTRIBUTION,  EVEN IF INCLUDED IN REAPER(TM),  COCKOS INCORPORATED  OR
+// ITS AFFILIATES HAVE NOTHING TO DO WITH IT.  LAST BUT NOT LEAST, BY USING THIS
+// PLUG-IN YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
+// ENTRUST SOMEBODY ELSE WITH DOING SO.
+
+desc:Snare Noise Generator
+//tags: analysis generator synthesis
+//author: LOSER
+
+
+
+
+
+
+
+slider1:attack_slider=48<0,500,0.1>Attack (ms)
+slider2:release_slider=1634<250,1800,0.1>Release (ms)
+slider3:min_slider=0<0,2,0.001>Min
+slider4:max_slider=1<0,2,0.001>Max
+slider5:-120<-120,0,1>Dry Volume (dB)
+slider6:-12<-120,0,1>Noise Volume (dB)
+slider7:100<0,100,0.05>Cutoff (Scale)
+slider8:-7<-25,25,0.05>Resonance (dB)
+
+in_pin:left input
+in_pin:right input
+out_pin:left output
+out_pin:right output
+
+
+@init //----------------------------------------------------------------
+
+
+//======APPLE FILTER=======
+mX1l=mX2l=mY1l=mY2l=mX1r=mX2r=mY1r=mY2r=0;
+
+//======APPLE FILTER=======
+
+function remap(n,from0,to0,from1,to1)
+(
+    (n - from0)/(to0 - from0)*(to1 - from1) + from1;
+);
+
+function remap_set(x0,x1,y0,y1)
+(
+    this.b = 1/(x1 - x0)*(y1 - y0);
+    this.a = -x0 + y0/this.b;
+);
+
+function remap(x)
+(
+    (x + this.a)*this.b;
+);
+
+
+
+function clamp(x,min,max)
+(
+    x < min ? min : x > max ? max : x;
+);
+
+
+
+ext_nodenorm = 1;
+
+function diode(x)(max(x,0));
+
+
+
+
+@slider
+
+
+attack = 1 - exp(-$pi/(srate*0.0005*attack_slider));
+release = exp(-$pi/(srate*0.0005*release_slider));
+remap.remap_set(min_slider,max_slider,0,1);
+
+
+
+
+@sample
+
+x = max(abs(spl0),abs(spl1));
+
+y = diode(x - y)*attack + y*release;
+
+gain = clamp(remap.remap(y),0,1);
+
+//output
+    spl2 = spl0*(1 - gain);
+    spl3 = spl1*(1 - gain);
+    spl0 *= gain;
+    spl1 *= gain;
+
+
+vd=2^(slider5/6);
+vn=2^(slider6/6);
+
+
+///-------------APPLE
+sx = 16+slider7*1.20103;
+cx = floor(exp(sx*log(1.059))*8.17742);
+res = slider8;
+
+
+//coeffcients
+
+cutoff = 2 * cx / srate;
+cutoff = cutoff*gain;
+res = pow(10, 0.05 * -res);
+k = 0.5 * res * sin($pi * cutoff);
+c1 = 0.5 * (1 - k) / (1 + k);
+c2 = (0.5 + c1) * cos($pi * cutoff);
+c3 = (0.5 + c1 - c2) * 0.25;
+
+mA0 = 2 * c3;
+mA1 = 2 * 2 * c3;
+mA2 = 2 * c3;
+mB1 = 2 * -c2;
+mB2 = 2 * c1;
+
+
+///------------------------------------------
+
+
+
+
+
+
+
+
+vn=vn*gain; 
+
+///-----------APPLE-----FILTER
+
+
+inputl = noiseL;
+inputr = noiseR;
+
+outputl = mA0*inputl + mA1*mX1l + mA2*mX2l - mB1*mY1l - mB2*mY2l;
+mX2l = mX1l;
+mX1l = inputl;
+mY2l = mY1l;
+mY1l = outputl;
+ 
+outputr = mA0*inputr + mA1*mX1r + mA2*mX2r - mB1*mY1r - mB2*mY2r;
+mX2r = mX1r;
+mX1r = inputr;
+mY2r = mY1r;
+mY1r = outputr;
+
+///-----------
+
+
+noiseL=rand(2)-1;
+noiseR=rand(2)-1;
+spl0=spl0*vd+outputl*vn;
+spl1=spl1*vd+outputr*vn;

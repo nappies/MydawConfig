@@ -1,0 +1,3 @@
+MyDawInstaller.exe --verbose
+
+pause

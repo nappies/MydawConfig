@@ -1,0 +1,433 @@
+desc:bl2 Limiter
+//author:vladg/sound
+
+slider1:0<-30,0,0.1>Threshold, dB
+slider2:0<-30,0,0.1>Ceiling, dB
+slider3:2<0,5,1{0.01,0.1,1.0,10.0,100,1000}>Release, ms
+slider4:1<0,1,1{Off,On}>Auto Release
+slider5:1<0,1,1{Off,On}>Maximizer
+
+@init
+
+// for allocator
+__memory_Index__ = 0;
+
+function allocate(size) local(result)
+(
+  result = __memory_Index__;
+  __memory_Index__ += size;
+  result;
+);
+
+function DB_TO_K(x)
+(
+  10 ^ (x / 20)
+);
+
+/*
+ * DelayLineMin
+ */
+ 
+DelayLineMin_PAD_SIZE = 8;
+ 
+function DelayLineMin_PAD_FLOOR(x)
+(
+  floor(x / DelayLineMin_PAD_SIZE) * DelayLineMin_PAD_SIZE;
+);
+
+function DelayLineMin_PAD_CEIL(x)
+(
+  ceil(x / DelayLineMin_PAD_SIZE) * DelayLineMin_PAD_SIZE;
+);
+ 
+function DelayLineMin_PAD_DIV(x)
+(
+  x / DelayLineMin_PAD_SIZE;
+);
+
+function DelayLineMin_init(delay_line_size) local(len, total_len, len_pad, second_len)
+(
+  len = delay_line_size;
+  total_len = 0;
+  
+  while (len > 1) (
+  
+    len_pad = DelayLineMin_PAD_CEIL(len);
+    second_len = DelayLineMin_PAD_DIV(len_pad);
+    
+    total_len += len_pad;
+    
+    len = second_len;
+  );
+  
+  this.min_position = total_len;
+  total_len += 1;
+  
+  // allocate the line
+  this.delay_line = allocate(total_len);
+  this.delay_line_size = delay_line_size;
+);
+
+function DelayLineMin_reset(default_value) local(len, total_offset, len_pad, second_len, i, default_value)
+(  
+  // now fill the line (and fill PADs with specific values)
+
+  len = this.delay_line_size;
+  
+  total_offset = 0;
+  
+  while (len > 1) (
+  
+    len_pad = DelayLineMin_PAD_CEIL(len);
+    second_len = DelayLineMin_PAD_DIV(len_pad);
+
+    // fill main values by defaults
+    i = 0;
+    
+    loop(len,
+      this.delay_line[total_offset + i] = default_value;
+      i += 1;
+    );
+
+    // fill padding
+    loop(len_pad - len,
+      this.delay_line[total_offset + i] = 1000000.0;   // the highest maximum value here
+      i += 1;
+    );
+  
+    total_offset += len_pad;
+
+    len = second_len;
+  );
+  
+  this.delay_line[total_offset] = default_value;
+  
+  this.head = 0;
+);
+
+function DelayLineMin_getMinPad(source, destination) local(y, i)
+(
+  // min of 8 values
+  y = source[0];
+  
+  i = 1;
+
+  loop(7,
+    y = min(y, source[i]);
+    i += 1;
+  );
+  
+  destination[0] = y;
+);
+
+function DelayLineMin_pushSample(x) local(position, y, len, total_offset, len_pad, second_len, second_position, position_aligned, source, destination)
+(
+  position = this.head;
+  
+  y = this.delay_line[this.head];
+  
+  this.delay_line[this.head] = x;
+  
+  this.head += 1;
+  
+  (this.head >= this.delay_line_size) ? ( this.head = 0 );
+  
+  // refresh min tree
+  
+  len = this.delay_line_size;
+  
+  total_offset = 0;
+  
+  while (len > 1) (
+  
+    len_pad = DelayLineMin_PAD_CEIL(len);
+    second_len = DelayLineMin_PAD_DIV(len_pad);
+
+    second_position = DelayLineMin_PAD_DIV(position);
+    
+    // get source and destination values
+    
+    position_aligned = DelayLineMin_PAD_FLOOR(position);
+    
+    source = this.delay_line + total_offset + position_aligned;
+    destination = this.delay_line + total_offset + len_pad + second_position;
+    
+    this.DelayLineMin_getMinPad(source, destination);
+    
+    total_offset += len_pad;
+    
+    len = second_len;
+    position = second_position;
+  
+  );
+  
+  y;
+);
+
+// for debugging:
+function DelayLineMin_getMinSlow() local(y, i)
+(
+  y = this.delay_line[0];
+
+  i = 1;
+  
+  loop(this.delay_line_size - 1,
+    y = min(y, this.delay_line[i]);
+    i += 1;
+  );
+  
+  y;
+);
+
+function DelayLineMin_getMin()
+(
+  this.delay_line[this.min_position];
+);
+
+/*
+ * MovingAverageFilter
+ */
+ 
+function MovingAverageFilter_init(size)
+(
+  this.delay_line_size = size;
+  this.delay_line = allocate(size);
+);
+
+function MovingAverageFilter_reset(default_value)
+(
+  memset(this.delay_line, default_value, this.delay_line_size);
+
+  this.head = 0;
+  this.sum = default_value * this.delay_line_size;
+);
+
+function MovingAverageFilter_pushSample(x)
+(
+  this.sum -= this.delay_line[this.head];
+  
+  this.delay_line[this.head] = x;
+
+  this.head += 1;
+  
+  (this.head >= this.delay_line_size) ? ( this.head = 0 );
+  
+  this.sum += x;
+
+  // result:  
+  this.sum / this.delay_line_size
+);
+
+/*
+ * DelayLine
+ */
+ 
+function DelayLine_init(delay_line_size)
+(
+  this.size = delay_line_size;
+  this.line = allocate(delay_line_size);
+  this.head = 0;
+); 
+
+function DelayLine_pushSample(x) local(y)
+(
+  y = this.line[this.head]; 
+  this.line[this.head] = x;
+  this.head = (this.head + 1) % this.size;
+  
+  y
+);
+
+function DelayLine_reset(val)
+(
+  this.head = 0;
+  
+  memset(this.line, val, this.size);
+);
+
+ref20_Fs_mult = srate / -log(0.1);  // for ref 20 dB calculation
+filter1_G_min = exp(-1);            // don't set filter too high
+
+function get_filter1_G(time_ref_20)
+(
+    exp(-1 / (time_ref_20 * ref20_Fs_mult));
+);
+
+// first order filter
+function filter1_G(s, G, x)
+(
+  x + G * (s - x);
+);
+
+// continue @init:
+
+(sample_rate != srate) ? (
+
+  sample_rate = srate;
+  
+  // 1. calculate lookahead (L2 compatible)
+  
+  lookahead_size = floor((0.0014 * srate) / 64 + 0.5) * 64;
+
+  // 2. setup memory buffers
+  
+  __memory_Index__ = 0;
+  
+  delay_min_gr.DelayLineMin_init(lookahead_size);  
+  
+  // triangle filter
+  moving_average_gr_1.MovingAverageFilter_init(lookahead_size / 2 + 1);
+  moving_average_gr_2.MovingAverageFilter_init(lookahead_size / 2 + 1);
+  
+  // signal delay
+  delay_line_left.DelayLine_init(lookahead_size);
+  delay_line_right.DelayLine_init(lookahead_size);
+  
+  // 3. setup second stage filter
+  slow_gr_attack_G = get_filter1_G(0.250);
+  slow_gr_release_G = get_filter1_G(0.500);
+  
+  // 4. pre-calculate auto-release constants
+  dynamic_G1 = get_filter1_G(0.281);
+  dynamic_G2 = get_filter1_G(0.057);
+  dynamic_G3 = get_filter1_G(0.00054);
+);
+
+// reset everything
+
+delay_min_gr.DelayLineMin_reset(1.0);
+
+moving_average_gr_1.MovingAverageFilter_reset(1.0);
+moving_average_gr_2.MovingAverageFilter_reset(1.0);
+
+delay_line_left.DelayLine_reset();
+delay_line_right.DelayLine_reset();
+
+// reset filters
+slow_gr_s = 1.0;
+fast_gr_s = 1.0;
+dynamic_gr_s = 1.0;
+
+dynamic_release_G = get_filter1_G(0.001);   // start default
+
+// report latency
+pdc_delay = lookahead_size;
+pdc_bot_ch = 0;
+pdc_top_ch = 2; // delays the first two channels (spl0/spl1).
+
+@slider
+
+maximizer_mode = slider5;
+
+(maximizer_mode) ? (
+  // boost input
+  input_gain_k = 1.0 / DB_TO_K(slider1);
+  threshold_k = 1.0;
+  output_gain_k = DB_TO_K(slider2);
+) : (
+  // keep input level
+  input_gain_k = 1.0;
+  threshold_k = DB_TO_K(slider1);   // threshold
+  output_gain_k = 1.0;
+);
+
+release_time_sec = pow(10, slider3 - 5);
+
+fast_gr_G = get_filter1_G(release_time_sec);
+
+use_auto_release = slider4;
+
+@block
+
+@sample
+
+spl0 *= input_gain_k;
+spl1 *= input_gain_k;
+
+level = max(abs(spl0), abs(spl1));
+
+gr = (level < threshold_k) ? 1.0 : (threshold_k / level);
+
+// hold GR
+delay_min_gr.DelayLineMin_pushSample(gr);
+
+min_gr = delay_min_gr.DelayLineMin_getMin();
+
+(!use_auto_release) ? (
+
+  // manual release
+
+  (min_gr < fast_gr_s) ? (
+    // attack
+    fast_gr_s = min_gr;
+  ) : (
+    // release
+    fast_gr_s = filter1_G(fast_gr_s, fast_gr_G, min_gr);
+  );
+
+  output_gr = fast_gr_s;
+
+) : (
+
+  // auto release mode
+
+  // 1. slow detector
+  (min_gr < slow_gr_s) ? (
+    // attack
+    slow_gr_s = filter1_G(slow_gr_s, slow_gr_attack_G, min_gr);
+  ) : (
+    // release
+    slow_gr_s = filter1_G(slow_gr_s, slow_gr_release_G, min_gr);
+  );
+  
+  // 2. combine both detectors
+  combined_gr = min(min_gr, slow_gr_s);
+
+  (combined_gr < dynamic_gr_s) ? (
+    // attack
+    dynamic_gr_s = combined_gr;
+  ) : (
+  
+    // 3. dynamic release stuff
+
+    // apply old dynamic release
+    dynamic_gr_s = filter1_G(dynamic_gr_s, dynamic_release_G, combined_gr);
+
+    output_gr = dynamic_gr_s;
+  
+    // calculate new dynamic release for the next call:
+  
+    // 1) depends on gain reduction
+    
+    dynamic_release = pow(1 - output_gr, 4);   // up to 1 second
+    dynamic_release_G1 = max(get_filter1_G(dynamic_release), filter1_G_min);  // limit fast values
+  
+    // 2) depends on slow gain reduction and difference slow/output (crest factor)
+  
+    dynamic_factor = min(slow_gr_s * 2 - output_gr, 1);
+    
+    // simplified piecewise approximation
+       
+    dynamic_release_G2 = (dynamic_factor < 0.25) ? 1 : (
+      (dynamic_factor < 0.5) ? ( (dynamic_factor - 0.25) / 0.25 * (dynamic_G1 - 1) + 1; ) : (
+        (dynamic_factor < 0.71) ? ( (dynamic_factor - 0.5) / 0.21 * (dynamic_G2 - dynamic_G1) + dynamic_G1; ) :
+        ( (dynamic_factor - 0.71) / 0.29 * (dynamic_G3 - dynamic_G2) + dynamic_G2; )
+      )
+    );
+    
+    dynamic_release_G = dynamic_release_G1 * dynamic_release_G2;
+  );
+);
+
+// smooth GR by attack
+output_gr = moving_average_gr_1.MovingAverageFilter_pushSample(output_gr);
+output_gr = moving_average_gr_2.MovingAverageFilter_pushSample(output_gr);
+
+// delay input
+input_left = delay_line_left.DelayLine_pushSample(spl0);
+input_right = delay_line_right.DelayLine_pushSample(spl1);
+
+// compute output
+spl0 = input_left * output_gr * output_gain_k;
+spl1 = input_right * output_gr * output_gain_k;
+

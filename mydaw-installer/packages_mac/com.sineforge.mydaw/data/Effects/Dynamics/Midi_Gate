@@ -1,0 +1,217 @@
+desc:MIDI Gate (by Geraint Luff)
+
+slider1:attack_ms=1<0,100,1>Attack (ms)
+slider2:release_ms=10<0,1000,1>Release (ms)
+slider3:max_vel=127<1,127,1>-Maximum velocity
+slider4:upside_down=0<0,1,1{gate-on,gate-off}>Default state
+slider5:channel_filter=0<0,16,1{all,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}>MIDI Channel
+
+in_pin:Left
+in_pin:Right
+out_pin:Left
+out_pin:Right
+
+@init
+function synth_setup(freemem, custom_slots)  local(i) (
+  synthx_polyphony = 16;
+  synthx_custom_offset = 9;
+  synthx_timestep = 1/srate;
+  synthx_step = synthx_custom_offset + custom_slots;
+  synthx_maxduration = 60*60*24*365*srate; // one year
+  synthx_max_active_note = 0;
+  synthx_current_note = 0;
+  freemem = (synthx_controllers = freemem) + 128;
+  freemem = (synthx_notestack = freemem) + synthx_polyphony*synthx_step;
+
+  i = 0;
+  while (i < synthx_polyphony*synthx_step) (
+    synthx_notestack[i] = 0;
+    i += 1;
+  );
+  freemem;
+);
+
+function synth_block() local(midi_offset, midi_msg1, midi_msg23, midi_msg2, midi_msg3, midi_type, midi_channel, i, note, selected_note) (
+  while (midirecv(midi_offset, midi_msg1, midi_msg23)) (
+    !synthx_midi_sink ? (
+      midisend(midi_offset, midi_msg1, midi_msg23); // passthrough
+    );
+    midi_type = midi_msg1>>4;
+    midi_channel = midi_msg1&0x0f;
+    midi_msg2 = midi_msg23&$xff; // note / controller
+    midi_msg3 = midi_msg23>>8; // velocity / value
+    (midi_type == $x9 && midi_msg3 != 0) ? (
+      // Note on
+      selected_note = -1;
+      // Choose inactive note
+      i = 0;
+      while (i < synthx_polyphony && selected_note < 0) (
+        note = synthx_notestack + synthx_step*i;
+        !note[0/*NOTE:ACTIVE*/] ? (
+          selected_note = note;
+        );
+        i += 1;
+      );
+      // If we didn't find one, stop a release
+      selected_note < 0 ? (
+        // Start by selecting random index
+        i = floor(rand()*synthx_polyphony);
+        selected_note = synthx_notestack + synthx_step*i;
+        // Choose note with longest release phase
+        i = 0;
+        while (i < synthx_polyphony && selected_note < 0) (
+          note = synthx_notestack + synthx_step*i;
+          note[1/*NOTE:SAMPLES_FROM_RELEASE*/] > selected[1/*NOTE:SAMPLES_FROM_RELEASE*/] ? (
+            selected_note = note;
+          );
+          i += 1;
+        );
+      );
+      // Reset the custom note parameters to 0
+      i = synthx_custom_offset;
+      while (i < synthx_step) (
+        selected_note[i] = 0;
+        i += 1;
+      );
+      // Set up the note parameters
+      selected_note[0/*NOTE:ACTIVE*/] = 1;
+      selected_note[2/*NOTE:SAMPLES_FROM_ATTACK*/] = -midi_offset;
+      selected_note[1/*NOTE:SAMPLES_FROM_RELEASE*/] = -synthx_maxduration;
+      selected_note[3/*NOTE:SAMPLES_FROM_SUSTAIN_RELEASE*/] = -synthx_maxduration;
+      selected_note[4/*NOTE:NOTE*/] = midi_msg2;
+      selected_note[5/*NOTE:BASE_FREQ*/] = 440*pow(2, (midi_msg2 - 69)/12);
+      selected_note[6/*NOTE:VEL*/] = midi_msg3;
+      selected_note[7/*NOTE:CHANNEL*/] = midi_channel;
+      selected_note[8/*NOTE:CUSTOM_INIT*/] = 0;
+    ) : (midi_type == $x8 || (midi_type == $x9 && midi_msg3 == 0)) ? (
+      // Choose duplicate note if there is one
+      i = 0;
+      while (i < synthx_polyphony) (
+        note = synthx_notestack + synthx_step*i;
+        note[4/*NOTE:NOTE*/] == midi_msg2 ? (
+          note[1/*NOTE:SAMPLES_FROM_RELEASE*/] = max(note[1/*NOTE:SAMPLES_FROM_RELEASE*/], -midi_offset);
+          note[3/*NOTE:SAMPLES_FROM_SUSTAIN_RELEASE*/] = max(note[3/*NOTE:SAMPLES_FROM_SUSTAIN_RELEASE*/], -midi_offset);
+        );
+        i += 1;
+      );
+    );
+  );
+  synthx_max_active_note = -1;
+  i = 0;
+  note = synthx_notestack;
+  while (i < synthx_polyphony) (
+    note[0/*NOTE:ACTIVE*/] ? (
+      synthx_max_active_note = i;
+    );
+    i += 1;
+    note += synthx_step;
+  );
+  synthx_max_active_note + 1;
+);
+
+function synth_sample() local(i, note, have_active) (
+  i = 0;
+  while (i <= synthx_max_active_note) (
+    note = synthx_notestack + synthx_step*i;
+    note[0/*NOTE:ACTIVE*/] ? (
+      note[2/*NOTE:SAMPLES_FROM_ATTACK*/] += 1;
+      note[1/*NOTE:SAMPLES_FROM_RELEASE*/] += 1;
+      synthx_controllers[64] < 64 ? (
+        note[3/*NOTE:SAMPLES_FROM_SUSTAIN_RELEASE*/] += 1;
+      );
+    );
+    i += 1;
+  );
+);
+
+function synth_note_next(note) local(selected_note, index, note) (
+  index = floor((note - synthx_custom_offset - synthx_notestack)/synthx_step);
+  index < 0 ? (
+    index = 0;
+  ) : (
+    index += 1;
+  );
+  selected_note = -1;
+  while (index <= synthx_max_active_note && selected_note < 0) (
+    note = synthx_notestack + synthx_step*index;
+    note[0/*NOTE:ACTIVE*/] && note[2/*NOTE:SAMPLES_FROM_ATTACK*/] >= 0 ? (
+      selected_note = note + synthx_custom_offset;
+    );
+    index += 1;
+  );
+  selected_note;
+);
+
+function synth_note_first() (
+  synth_note_next(-1);
+);
+
+function synth_stop(note) (
+  (note - synthx_custom_offset)[0/*NOTE:ACTIVE*/] = 0;
+);
+
+function synth_channel(note) (
+  (note - synthx_custom_offset)[7/*NOTE:CHANNEL*/];
+);
+
+function synth_release(note) (
+  (note - synthx_custom_offset)[1/*NOTE:SAMPLES_FROM_RELEASE*/];
+);
+
+function synth_velocity(note) (
+  (note - synthx_custom_offset)[6/*NOTE:VEL*/];
+);
+
+//Themain_COde
+
+freemem = 0;
+freemem = synth_setup(freemem, 1); // Request one slot to keep the phase in
+
+// Two-stage smoothing for the envelope
+env = 0;
+
+@block
+
+channel_filter_enabled = !!channel_filter;
+channel_filter_channel = channel_filter - 1;
+
+synth_block();
+
+attack_samples = attack_ms*0.001*srate;
+attack_ratio = attack_samples ? 1 - exp(-1/attack_samples) : 1;
+release_samples = release_ms*0.001*srate;
+release_ratio = release_samples ? 1 - exp(-1/release_samples) : 1;
+
+@sample
+
+synth_sample();
+
+// Iterate over the active notes
+total_vel = 0;
+note = synth_note_first();
+while (note > 0) (
+  channel_filter_enabled && synth_channel(note) != channel_filter_channel ? (
+    synth_stop(note);
+  ) : (
+    synth_release(note) > 0 ? (
+      synth_stop(note);
+    );
+    total_vel += synth_velocity(note)/1;
+  );
+  note = synth_note_next(note);
+);
+total_vel = min(1, total_vel);
+
+env < total_vel ? (
+  env += (total_vel - env)*attack_ratio;
+) : (
+  env += (total_vel - env)*release_ratio;
+);
+upside_down ? (
+  spl0 *= (1 - env);
+  spl1 *= (1 - env);
+) : (
+  spl0 *= env;
+  spl1 *= env;
+);
+
