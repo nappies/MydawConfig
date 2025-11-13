@@ -13,10 +13,10 @@ jobs:
       
       - name: Build Installer
         run: |
-          binarycreator --offline-only -p mydaw-installer/packages_mac -c mydaw-installer/config/config.xml MyDaw-Macos-Arm64.app
+          binarycreator --offline-only -p mydaw-installer/packages_mac -c mydaw-installer/config/config.xml MyDaw-Macos.app
       
       - name: Upload Installer Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MyDaw-Macos-Arm64
-          path: MyDaw-Macos-Arm64.app
+          name: MyDaw-Macos
+          path: MyDaw-Macos.app
