@@ -15,8 +15,13 @@ jobs:
         run: |
           binarycreator --offline-only -p mydaw-installer/packages_mac -c mydaw-installer/config/config.xml MyDaw-Macos.app
       
+      - name: Create ZIP with .app as top-level
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent MyDaw-Macos.app MyDaw-Macos.zip
+      
       - name: Upload Installer Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MyDaw-Macos
-          path: MyDaw-Macos.app
+          path: MyDaw-Macos.zip
+          compression-level: 0
