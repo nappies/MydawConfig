@@ -16,7 +16,9 @@ jobs:
       run: |
         pip install aqtinstall
         aqt install-tool mac desktop tools_ifw
-        echo "$GITHUB_WORKSPACE/Tools/QtInstallerFramework/4.7/bin" >> $GITHUB_PATH
+    
+        - name: Add IFW to PATH
+         run: echo "$GITHUB_WORKSPACE/Tools/QtInstallerFramework/4.7/bin" >> $GITHUB_PATH
       
         - name: Build Installer
         run: |
