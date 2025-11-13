@@ -12,7 +12,7 @@ jobs:
           qtifw-version: '4.6.1'
       - name: Build Installer
         run: |
-          binarycreator --offline-only -p packages -c mydaw-installer/config/config.xml MyAppInstaller.app  # Create an offline installer using packages and config:contentReference[oaicite:1]{index=1}
+          binarycreator --offline-only -p packages_mac -c mydaw-installer/config/config.xml MyAppInstaller.app  # Create an offline installer using packages and config:contentReference[oaicite:1]{index=1}
       - name: Upload Installer Artifact
         uses: actions/upload-artifact@v4
         with:
