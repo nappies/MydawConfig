@@ -2,7 +2,7 @@ name: Build macOS Universal Installer
 on: release
 jobs:
   build-installer:
-    runs-on: macos-13-large
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
       
