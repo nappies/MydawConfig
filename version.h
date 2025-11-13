@@ -1,0 +1,11 @@
+#define MYDAW_VERSION 2,5,1,0
+#define MYDAW_VERSION_STR "2,5,1,0\0"
+#define MYDAW_VERSION_TYPE MYDAW_VERSION_STABLE
+#define MYDAW_VERSION_STABLE   "Stable"
+#define MYDAW_VERSION_UNSTABLE "Pre-release"
+#define GIT_COMMIT "@GIT_COMMIT@"
+#define REA_VERSION 7,4,8,0
+
+
+
+

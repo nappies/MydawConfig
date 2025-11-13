@@ -1,0 +1,4 @@
+./MyDawInstaller.app/Contents/MacOS/MyDawInstaller -d
+
+
+reaper_MyDaw_x64.dll
