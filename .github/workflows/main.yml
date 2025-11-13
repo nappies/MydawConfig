@@ -4,24 +4,31 @@ jobs:
   build-installer:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install Qt IFW
+      run: |
+        pip install aqtinstall
+        aqt install-tool mac desktop tools_ifw
+        echo "$(pwd)/Tools/QtInstallerFramework/4.8/bin" >> $GITHUB_PATH
       
-      - name: Install Qt Installer Framework
-        uses: jmarrec/setup-qtifw@v1
-        with:
-          qtifw-version: '4.6.1'
-      
-      - name: Build Installer
+        - name: Build Installer
         run: |
           binarycreator --offline-only -p mydaw-installer/packages_mac -c mydaw-installer/config/config.xml MyDaw-Macos-Arm64.app
-      
-      - name: Prepare for upload
-        run: |
+       
+        - name: Prepare for upload
+         run: |
           mkdir -p upload
           mv MyDaw-Macos-Arm64.app upload/
-      
-      - name: Upload Installer Artifact
-        uses: actions/upload-artifact@v4
-        with:
+       
+        - name: Upload Installer Artifact
+         uses: actions/upload-artifact@v4
+         with:
           name: MyDaw-Macos-Arm64
           path: upload/
