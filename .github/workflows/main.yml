@@ -2,7 +2,7 @@ name: Build macOS Universal Installer
 on: release
 jobs:
   build-installer:
-    runs-on: macos-14
+    runs-on: macos-13-large
     steps:
       - uses: actions/checkout@v3
       
@@ -10,8 +10,6 @@ jobs:
         uses: jmarrec/setup-qtifw@v1
         with:
           qtifw-version: '4.6.1'
-          target: 'mac'
-          arch: 'arm64'
       
       - name: Build Installer
         run: |
