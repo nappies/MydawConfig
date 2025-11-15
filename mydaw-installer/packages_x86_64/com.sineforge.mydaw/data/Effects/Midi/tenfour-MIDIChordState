@@ -1,0 +1,60 @@
+desc:tenfour-MIDIChordState
+slider1:0<0,1,1{On,Off}>Active (eats notes)
+slider2:0<0,127,1>Notes in buffer
+slider3:0<0,1000,1>Note Query Index
+slider4:0<0,127,1>Output Pitch
+slider5:0<0,15,1>Output channel
+slider6:0<0,127,1>Output velocity
+@init
+notebuf=0; //start pos of buffer
+nb_width=3; //number of entries per note
+buflen=0; //notes in buffer
+function addRemoveNoteFromBuffer(m1,m2,m3)
+( 
+  s = m1&$xF0;
+  c = m1&$xF; // channel
+  n = m2;// note
+  v = m3; // velocity
+  
+  init_buflen=buflen;
+  
+  i = -1;
+  while // look for this note|channel already in the buffer
+  (
+    i = i+1;
+    i < buflen && (notebuf[nb_width*i]|0 != n || notebuf[nb_width*i+1]|0 != c);
+        );
+    (s == $x90 && v > 0) ? // note-on, add to buffer
+    ( 
+      notebuf[nb_width*i] = n;
+      notebuf[nb_width*i+1] = c;
+      notebuf[nb_width*i+2] = v;
+      i == buflen ? buflen = buflen+1;
+    ) 
+    : // note-off, remove from buffer
+    (
+      i < buflen ?
+      (
+         memcpy(notebuf+nb_width*i, notebuf+nb_width*(i+1),
+                      nb_width*(buflen-i-1));  // delete the entry
+         buflen = buflen-1;
+       );
+    );
+    buflen==init_buflen ? -1; //return value for nothing added/removed
+);
+@slider
+p=slider3*nb_width; //position in buffer
+slider4=notebuf[p]; // note
+slider5=notebuf[p+1]; // channel
+slider6=notebuf[p+2]; // velocity
+@block
+while (midirecv(offset,msg1,msg2,msg3))
+(
+  (msg1&$xF0==$x90) ?
+  	addRemoveNoteFromBuffer(msg1,msg2,msg3);
+  (msg1&$xF0==$x80) ?
+    addRemoveNoteFromBuffer(msg1,msg2,msg3);
+  
+  slider2=buflen;
+  midisend(offset,msg1,msg2,msg3);
+)

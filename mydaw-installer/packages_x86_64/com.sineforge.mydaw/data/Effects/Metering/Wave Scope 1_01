@@ -1,0 +1,1036 @@
+/* 
+   * Author: EUGEN27771
+   * Author URI: http://forum.cockos.com/member.php?u=50462
+   * Co-author: IGOR
+   * Co-author URI: http://forum.cockos.com/member.php?u=106943
+   * Licence: GPL v3
+   * Version: 1.01
+*/
+
+desc:WaveScopeStereo v2
+options:no_meter
+//options:want_all_kb
+//import inc\Mouse3Full.jsfx-inc
+//import inc\ColorMenu2.jsfx-inc
+
+slider1:1<0.01,12,0.00001>-Range(in sec)
+slider2:0<0,6,1>-exp-mlt factor for Range(for MidiPitch, Tempo mode)
+slider3:1<1,1000000,0.01>-Vertical Zoom
+slider4:3<0,3,1{ TimeLoop, MidiPitch, Tempo, Disable} >-Sync Mode:
+slider5:0<0,1,1{ 1 axis, 2 axis}>-View Mode:
+slider6:0<0,2,1{ L / R, Left, Right}>-Chan Mode:
+//-- Colors ------------------
+slider7:0<0,1,1{ Waveform 1, Waveform 2}>-Colors: 
+
+//-- Test Slider -------------
+slider10:0<-20000,20000,2>-Test Slider
+
+in_pin:IN1
+in_pin:IN2
+
+
+@init
+
+ext_nodenorm = 1; // no denorm noise
+gfx_clear = 0x05100A; // main bg color 0xBBGGRR form
+
+//------------------------------------------------
+/*Range не должен быть слишком большим - оптимально около 4 секунд.
+Чем больше - тем больше нагрузка на процессор в этой версии, если это важно.
+В следующих не будет иметь значения вообще(мы над этим работаем:)), но времени мало.
+Но запас в слайдере оставлен специльно(нужен лично мне).*/
+// incr. max. range - more CPU usage! This will be fixed in future versions)
+min_range_sec = 0.001;
+max_range_sec = 12;
+
+//-- Отступы(for test only),потом убрать ---------
+_Ls = 18;
+_Rs = 38;
+_Up = 18;
+_Dn = 18;
+
+//**************************************************************************************************
+//**************************************************************************************************
+//**************************************************************************************************
+
+
+/***************************************************************************************************
+*** GetMouseState() and SetMouseLastState() functions **********************************************
+***************************************************************************************************/
+/* Global variables: 
+   1) mouse_down, mouse_rdown, mouse_mdown, mouse_up, mouse_rup, mouse_mup, mouse_move, Ctrl, Shift, Alt.
+   2) mouse_last_cap, mouse_last_x, mouse_last_y.   
+   Can be used in code. */
+
+//-- Get current mouse state -----------------------------------------
+function GetMouseState()
+(
+  //-- Mouse btn has been pressed(anywhere) ------
+  mouse_down  = (mouse_cap&1)  && !(mouse_last_cap&1);  // L mouse
+  mouse_rdown = (mouse_cap&2)  && !(mouse_last_cap&2);  // R mouse
+  mouse_mdown = (mouse_cap&64) && !(mouse_last_cap&64); // M mouse
+  //-- Mouse btn has been released(anywhere) -----
+  mouse_up  = (mouse_last_cap&1)  && !(mouse_cap&1);    // L mouse
+  mouse_rup = (mouse_last_cap&2)  && !(mouse_cap&2);    // R mouse
+  mouse_mup = (mouse_last_cap&64) && !(mouse_cap&64);   // M mouse
+  //-- Mouse moved(anywhere) ---------------------
+  mouse_move = (mouse_last_x != mouse_x) || (mouse_last_y != mouse_y);
+  //-- Mouse dbl(used for mouseDblClick) ---------
+  mouse_down ? (
+    mouse_dbl = (mouse_down_x==mouse_x) && (mouse_down_y==mouse_y) && (mouse_captimer<12);
+    mouse_captimer = 0;
+  );
+  
+  //-- mouse press coordinates -------------------
+  mouse_down  ? (mouse_down_x  = mouse_x; mouse_down_y  = mouse_y; );
+  mouse_rdown ? (mouse_rdown_x = mouse_x; mouse_rdown_y = mouse_y; );
+  mouse_mdown ? (mouse_mdown_x = mouse_x; mouse_mdown_y = mouse_y; );
+  
+  //-- modkeys state -----------------------------
+  Ctrl  = mouse_cap&4;  // Ctrl
+  Shift = mouse_cap&8;  // Shift
+  Alt   = mouse_cap&16; // Alt
+);
+
+
+//-- Set(update) last state -------------------------------------------
+function SetMouseLastState()
+( 
+  mouse_last_cap = mouse_cap; // upd last_cap
+  mouse_last_x = mouse_x;     // upd last_x
+  mouse_last_y = mouse_y;     // upd last_y
+  mouse_wheel  = 0;           // reset mouse_wheel
+  mouse_hwheel = 0;           // reset mouse_hwheel
+  //--------------
+  mouse_captimer < 12 ? mouse_captimer+=1; // upd "timer"(frame cnt)
+  mouse_up ? mouse_dbl = 0;   // reset dbl when released 
+);
+
+/***************************************************************************************************
+*** Get mouse state(with ref to the object) functions **********************************************
+***************************************************************************************************/
+/* pointINrect(), mouseINrect() must be called with arguments.
+   All other functions must be called with "object" prefix.
+   Functions use the object coordinates - MyObj.x, MyObj.y, MyObj.w, MyObj.h. 
+   Example: MyButton.mouseClick() ? SomethingCode; */
+
+//-- if point(p_x, p_y) in rect(x,y,w,h) area ----
+function pointINrect(p_x,p_y, x,y,w,h) ( p_x>=x && p_x<=x+w && p_y>=y && p_y<=y+h; );
+//-- if mouse cursor in rect(x,y,w,h) area -------
+function mouseINrect(x,y,w,h) ( pointINrect(mouse_x, mouse_y, x,y,w,h); );
+//-- if point(p_x, p_y) in object area -----------
+function pointIN(p_x,p_y) instance(x,y,w,h) ( this.pointINrect(p_x,p_y, x,y,w,h) );
+//-- if mouse cursor in object area --------------
+function mouseIN() ( this.pointIN(mouse_x, mouse_y); );
+
+
+//-- Left Mouse Button ---------------------------
+function mouseDown()    ( mouse_down     && this.mouseIN(); );
+function mouseUp()      ( mouse_up       && this.mouseIN(); );
+function mouseClick()   ( this.mouseUp() && this.pointIN(mouse_down_x, mouse_down_y); );
+function mouseDblClick() ( mouse_dbl && this.mouseClick(); );
+//-- Rigth Mouse Button --------------------------
+function mouseRDown()  ( mouse_rdown     && this.mouseIN(); );
+function mouseRUp()    ( mouse_rup       && this.mouseIN(); );
+function mouseRClick() ( this.mouseRUp() && this.pointIN(mouse_rdown_x, mouse_rdown_y); );
+//-- Middle Mouse Button -------------------------
+function mouseMDown()  ( mouse_mdown     && this.mouseIN(); );
+function mouseMUp()    ( mouse_mup       && this.mouseIN(); );
+function mouseMClick() ( this.mouseMUp() && this.pointIN(mouse_mdown_x, mouse_mdown_y); );
+
+
+
+//**************************************************************************************************
+//-- Draw ColMenu Field spinBox --------------------------------------------------------------------
+//**************************************************************************************************
+//------------------------------------------------
+function ColMenu.New(x,y,w,h, r,g,b,a)
+(
+  this.x = x; this.y = y; this.w = w; this.h = h; // coords
+  this.r = r; this.g = g; this.b = b; this.a = a; // color  
+);
+
+//------------------------------------------------
+function ColMenu_Field(x,y,w,h, lbl, val)
+  instance(cap_val, cap_y)
+  local(cx,cy, str_y)
+(
+    val = floor(val*255 + 0.5); // value 0...255 form
+    
+    //--- Get mouse, set val --
+    mouse_up ? this.isCaptured = 0;
+    
+    mouse_down && mouseINrect(x,y,w,h) ? (
+        mouse_down_x > x+w-h+2 ? (
+          mouse_down_y < y+h/2 ? val+=1 : val-=1;
+          val = min( max(val, 0), 255);
+        ) : (
+          this.isCaptured = 1; 
+          this.cap_val = val; 
+          this.cap_y = mouse_y;
+        );
+    );
+  
+    this.isCaptured ? (
+      val = cap_val + (cap_y-mouse_y);
+      val = min( max(val, 0), 255);
+    );
+  
+  
+  gfx_a = 0.2; // frame clr
+  gfx_rect(x,y,w,h,0); // frame
+  gfx_a = 1;   // val, lbl clr
+  //-- Draw(стрелки) ---------
+  cx = x+w-8; cy = y+h/2;   // center(стрелки)
+  gfx_x = cx-2; gfx_y = cy-2;
+  gfx_lineto(cx, cy-4); gfx_lineto(cx+2, cy-2); //up
+  gfx_x = cx-2; gfx_y = cy+2;
+  gfx_lineto(cx, cy+4); gfx_lineto(cx+2, cy+2); //down
+   
+  //-- label, value ----------
+  str_y = y + (h-gfx_texth)/2;
+  gfx_x = x - 24;
+  gfx_y = str_y;
+  gfx_drawstr(lbl); // label
+  gfx_x = x + 4; 
+  gfx_y = str_y;
+  gfx_drawnumber(val,0); // value(0...255 form) 
+
+  val/255; // return value [0...1]
+);
+//------------------------------------------------
+function ColMenu.Draw(obj*)
+  instance(x,y,w,h, r,g,b,a, RR,GG,BB,AA)
+  local(xx, yy, ww, hh)
+( 
+  gfx_set(0,0,0,1);
+  gfx_rect(x,y,w,h,1);
+  
+  gfx_set(r,g,b,0.2);
+  gfx_rect(x,y,w,h,0);
+  
+  // Координаты сделать изменяемыми, пока постоянные
+  xx = x + 32; // fields x-offset
+  yy = y + 10; // fields y-offset
+  ww = 40; hh = 18; // fields w, h
+  
+  //-- Draw menu, change obj color -----
+  gfx_setfont(1,"Calibri", 15); // fields font
+  obj.r = RR.ColMenu_Field(xx, yy,    ww, hh, "R", obj.r);
+  obj.g = GG.ColMenu_Field(xx, yy+20, ww, hh, "G", obj.g);
+  obj.b = BB.ColMenu_Field(xx, yy+40, ww, hh, "B", obj.b);
+  obj.a = AA.ColMenu_Field(xx, yy+60, ww, hh, "A", obj.a);
+  
+  //------------------------------------
+  gfx_set(obj.r, obj.g, obj.b, obj.a);
+  gfx_rect(x+90, y+10, w-100, h-22, 1);
+  //------------------------------------
+  
+);
+
+
+//**************************************************************************************************
+//**************************************************************************************************
+//**************************************************************************************************
+// == Color functions =================================== //
+/* Color(RGB) format 0xRRGGBB(as HEX), alfa(A) [0...255] */
+//-- Set gfx r,g,b,a -------------------
+function SetRGBA(RGB, A)
+(
+  gfx_r = ((RGB >> 16) & 0xFF) / 255;
+  gfx_g = ((RGB >> 8)  & 0xFF) / 255;
+  gfx_b = (RGB & 0xFF) / 255;
+  gfx_a = A/255;    
+);
+
+//-- Set gfx r,g,b and a = 1 -----------
+function SetRGBA(RGB)
+(
+  SetRGBA(RGB, 255);    
+);
+
+//-- set obj r,g,b,a -------------------
+function SetColorFromRGBA(RGB, A) 
+( 
+  this.r = ((RGB >> 16) & 0xFF) / 255;
+  this.g = ((RGB >> 8)  & 0xFF) / 255;
+  this.b = (RGB & 0xFF) / 255;
+  this.a = A/255;  
+);
+
+//-- set obj r,g,b and a = 1 -----------
+function SetColorFromRGBA(RGB) 
+( 
+  SetColorFromRGBA(RGB, 255);  
+);
+
+// == DB2VAL - VAL2DB =================================== //
+function DB2VAL(x) 
+(  
+  10^(x/20); // VAL 
+);
+//----------------------------
+function VAL2DB(x) 
+( 
+  20*log10(x); // DB  
+);
+
+// == Some other ======================================== //
+function round(x) global()
+(
+  x < 0 ? ceil(x - 0.5) : floor(x + 0.5);
+);
+//----------------------------
+function minmax(x, min, max)
+(
+  min(max(x, min), max); 
+);
+
+/***************************************************************************************************
+*** Waveform functions *****************************************************************************
+***************************************************************************************************/
+// == Set waveforms Colors ============================== //
+function wave.SetColors()
+  local(Asep, Amix)
+(
+  Asep = 130; // alfa for view_mode: 2 axis(and 1 axis + mono modes)
+  Amix = 97;  // alfa for view_mode: 1 axis + "L/R"
+  //-- set colors ------------
+  //[W1=RGB=152/150/97 A=130] // Chan 1 
+  this.ch1.r = 152 / 255;
+  this.ch1.g = 150 / 255;
+  this.ch1.b = 97  / 255;
+  this.ch1.a = 130 / 255;
+  //[W2=RGB=116/168/97 A=130] // Chan 2
+  this.ch2.r = 116 / 255;
+  this.ch2.g = 168 / 255;
+  this.ch2.b = 97  / 255;
+  this.ch2.a = 130 / 255;
+  
+  //-- set alfa multiplier ---
+  this.ch12.a_mlt = Amix/Asep; // alfa mlt for 1 axis view_mode   
+);
+
+// == Clear sample buffer, reset spos =================== //
+function wave.ResetBuffer() 
+(
+  memset(this.sbuf, 0, round(max_range_sec * srate) * 2); // clear max_sz
+  //memset(this.sbuf, 0, this.sbuf_sz); // clear current sbuf_sz variant
+  this.spos = 0;   // reset spos
+  this.pause = 0;  // reset pause
+  this.offset = 0; // reset offset
+);
+
+// == Init Wave ========================================= //
+function wave.Init(x,y,w,h, sbuf, pbuf) 
+(
+  this.sbuf = sbuf; // samplebuffer mem offset, must NOT cross other used mem slots!
+  this.pbuf = pbuf; // peakbuffer mem offset, must NOT cross other used mem slots!
+  //------------------------------------
+  wave.ResetBuffer(); // reset buffer
+  //------------------------------------
+  this.x = x; this.y = y; this.w = w; this.h = h; // set def coords
+  wave.SetColors(); // set def colors
+  //------------------------------------
+  this.view_mode = 1; // view mode 0 = on one axis, 1 = on sep axis
+  this.Vzoom = 1;     // vertical zoom
+  this.div = 200;     // divfactor(samples per peak)
+);
+
+// == Input samples to sample buffer(sbuf) ============== //
+function wave.SamplesToBuffer(input1, input2)
+  instance(sbuf, sbuf_sz, spos)   
+(
+  !this.pause ? (
+    spos >= sbuf_sz ? spos = 0;
+    sbuf[spos]   = input1;
+    sbuf[spos+1] = input2;
+    //----------------------------------
+    spos+=2; // upd spl pos counter
+  );
+);
+
+//**************************************************************************************************
+/*1) По диапазону из семлбуфера - нужно будет переделать. Если все по задумке, получится очень круто. 
+Во-первых - нет смысла пересоздавать полностью все пики, нужно только участок! - 
+если не изменяются режимы отображения волны и размеры окна - это сходу снизит расход ресурсов на любом,
+даже очень длинном диапазоне в разы, в десятки раз, сложновато сделать четко, но оно стоит того. */
+
+// == Create Peaks from samplebuffer ==================== //
+function wave.CreatePeaks()
+  instance(w, sbuf, pbuf, div, offset)
+  local(s, s_offs, p, peak_cnt, next_peak, 
+        cur_spl1, min_peak1, max_peak1,
+        cur_spl2, min_peak2, max_peak2 ) 
+( 
+  s = s_offs = - round(offset) * 2; // spl cnt, regard spl offset
+  peak_cnt = 0; // peak cnt
+  p = 0;        // pos in pbuf 
+  
+  loop(w,
+      // -- reset min-max peaks(v2-draw) ---------
+      min_peak1 = min_peak2 = 777; max_peak1 = max_peak2 = -777; // 777 
+      
+      // -- Create peaks from buffer samples -----
+      next_peak = s_offs + floor((peak_cnt+1) * div * 2 ); // next peak spos 
+      while(s <= next_peak) (
+        cur_spl1 = sbuf[s];    // ch1 spl
+        cur_spl2 = sbuf[s+1];  // ch2 spl
+        min_peak1 = min(min_peak1, cur_spl1);   // min peak1
+        max_peak1 = max(max_peak1, cur_spl1);   // max peak1
+        min_peak2 = min(min_peak2, cur_spl2);   // min peak2
+        max_peak2 = max(max_peak2, cur_spl2);   // max peak2      
+        s+=2; // upd cnt
+      );
+      
+      // -- peaks to peak buffer(mem_set_values - v5.28 or later)
+      mem_set_values(p, min_peak1, max_peak1, min_peak2, max_peak2); 
+      
+    peak_cnt+=1; // upd peak cnt
+    p+=4; // upd pos in pbuf 
+  
+  );
+
+);
+
+// == Draw Peaks from peakbuffer ======================== //
+function wave.draw_Peaks(chan, axis, hlf_h, r,g,b,a)
+  instance(x,y,w,h, pbuf, Vzoom)
+  local(min_peak, max_peak, last_min_peak, last_max_peak, 
+        peak_x, Vrange, chan, p, aa)
+(
+  //-- Get samples from sbuf, create peaks, draw waves -----
+  Vrange = hlf_h * Vzoom;  // Vrange - coeff
+  peak_x = x; // first peak x-position
+  //------------------------------------ 
+  chan == 1 ? p = 0 : p = 2;  // start pos in pbuf(dependent of channel)
+  // last peaks from from peak buffer(нужно, чтобы связать крайние точки).
+  min_peak = pbuf[(w-1)*4 + p]   * Vrange; // last min peak 
+  max_peak = pbuf[(w-1)*4 + p+1] * Vrange; // last max peak
+  last_min_peak = axis - minmax(round(min_peak), -hlf_h, hlf_h);
+  last_max_peak = axis - minmax(round(max_peak), -hlf_h, hlf_h); 
+  
+  //-- Draw waveform -------------------
+  gfx_set(r,g,b); // peak color
+  aa = min(a + 0.2, 1); // contour color alfa
+ 
+  loop(w,      
+        pbuf[p] < 777 ? ( // if division factor < 1, see CreatePeaks
+          min_peak = pbuf[p] * Vrange;
+          max_peak = pbuf[p+1] * Vrange;
+          min_peak = axis - minmax(round(min_peak), -hlf_h, hlf_h);
+          max_peak = axis - minmax(round(max_peak), -hlf_h, hlf_h);
+          gfx_a = a; // peak vertical line color alfa
+          gfx_line(peak_x, min_peak, peak_x, max_peak); // peak
+        );
+        gfx_a = aa; // contour color alfa
+        gfx_line(peak_x-1, last_min_peak, peak_x, min_peak, 1); // contour1
+        gfx_line(peak_x-1, last_max_peak, peak_x, max_peak, 1); // contour2
+        // -- upd last peaks ---
+        last_min_peak = min_peak;
+        last_max_peak = max_peak;
+      // -----------------------
+      peak_x+=1; // next peak x-position
+      p+=4; // next position in pbuf 
+  );
+
+);
+
+// == Draw Frame ======================================== //
+function wave.draw_Frame(r,g,b,a)
+  instance(x,y,w,h)
+( 
+  gfx_set(r,g,b,a);
+  gfx_rect(x-1, y, w+2, h+1, 0);
+);
+
+
+// == Draw db_scale ===================================== //
+function wave.draw_DB_Scale(axis, hlf_h) // R side scale
+  instance(x,y,w,h, Vzoom)
+  local(r,g,b,a, Vrange, texth05, db_max,db_min,db, scale_x, l1db,l3db, xn,
+        v,last_v, y1,y2, abs_db, last_db, xl)
+( 
+  // 115; 150; 80; a = 1; // db_scale values color
+  // 110; 144; 76; a = 1; // db_scale lines color
+  Vrange = hlf_h * Vzoom;
+  texth05 = gfx_texth*0.5;
+  db_max = floor(VAL2DB(1/Vzoom)); // верхнее значение db
+  db_min = ceil(VAL2DB(gfx_texth/Vrange)); // V2 нижнее значение db
+  db_min = db_min + (db_min%3); // окр. до трех(для отриц. чисел!)
+  
+  scale_x = x + w; // scale x-position(wave R side x-coord)
+  l1db = 4;   // short(1db) line length
+  l3db = 8;   // long(3db) line length
+  xn = scale_x + l3db + 4;  // scale db_values x-coord
+  
+  // -- Draw dB values ---------------------------
+  r = 0.451; g = 0.588; b = 0.314; a = 1; // db_scale values color
+  gfx_set(r,g,b,a);
+  //------------------------------------
+  gfx_x = xn+1; gfx_y = axis - texth05;
+  gfx_drawchar(0x221E); // v1 "-oo(0x221E)"
+  //gfx_drawstr("inf"); // v2 "-inf"
+  //------------------------------------
+  db = db_max + (db_max%3);   // окр. до трех(для отриц. чисел!)
+  last_v = hlf_h + gfx_texth;
+  while(db >= db_min) (
+    v = round(DB2VAL(db) * Vrange);
+    y1 = axis - v; // Above the axis
+    y2 = axis + v; // Below the axis
+    
+    last_v-v >= gfx_texth ? (
+      abs_db = abs(db); // abs, now we do not draw "-" for this scale
+      //----------------------
+      gfx_a = 1;
+      gfx_x = xn; gfx_y = y1 - texth05; // db_val x, y
+      gfx_drawnumber(abs_db, 0); 
+      gfx_x = xn; gfx_y = y2 - texth05; // db_val x, y
+      gfx_drawnumber(abs_db, 0);
+      gfx_a = 0.15; 
+      gfx_line(x, y1, scale_x, y1);
+      gfx_line(x, y2, scale_x, y2);
+      last_v = v;
+      last_db = db; // The last drawn value 
+    );
+
+    db-=3;
+  ); 
+  
+  // -- Draw dash-lines on the scale -------------
+  r = 0.431; g = 0.565; b = 0.298; a = 1; // db_scale lines color
+  gfx_set(r,g,b,a);
+  //------------------------------------
+  gfx_line(scale_x, axis, scale_x + l3db, axis); // center line("-oo")
+  //------------------------------------
+  db = last_db;
+  while(db <= db_max) (
+    v = round(DB2VAL(db) * Vrange);
+    y1 = axis - v; // Above the axis
+    y2 = axis + v; // Below the axis
+    
+    db%3 ? (xl = scale_x + l1db) : (xl = scale_x + l3db);
+    gfx_line(scale_x, y1, xl, y1); 
+    gfx_line(scale_x, y2, xl, y2);
+   
+    db+=1; 
+  );
+
+);
+
+// == Draw label ======================================== //
+function wave.draw_Label(x,y,w,h, r,g,b,a, lbl)
+  local(offs)
+(
+  gfx_set(0,0,0,0.4); // str shadow col
+  offs = (h - gfx_texth) * 0.5; 
+  gfx_x = x + 9; gfx_y = y + offs + 1;
+  gfx_drawstr(lbl);
+  
+  gfx_set(r,g,b,a);   // lbl txt col
+  gfx_x = x + 8; gfx_y = y + offs;
+  gfx_drawstr(lbl);
+  
+  //gfx_a = 0.2; gfx_rect(x,y,w,h, 0);
+);
+
+// == Draw MousePos_db ================================== //
+function wave.draw_MousePos_db(axis, axis1, axis2, hlf_h, r,g,b,a)
+  instance(x,y,w,h, Vzoom, view_mode)
+  local(Vrange, mouse_pos_db, cur_axis, str, str_w, str_h,
+        lbl_x, lbl_y, lbl_w, lbl_h)
+(
+  Vrange = hlf_h * Vzoom;  // Vrange - coeff
+  
+  view_mode ? (  // cur_axis if view_mode = 1;
+    mouse_y < axis ? cur_axis = axis1 : cur_axis = axis2;
+  ) : (          // if view_mode = 0;
+    cur_axis = axis;
+  );
+  
+  // -- Mouse pos val ----------------------------
+  this.mouseIN() ? (
+    mouse_pos_db = VAL2DB( abs( (cur_axis - mouse_y)/Vrange) );
+    mouse_pos_db = strcat( sprintf(#, "%.2f", mouse_pos_db), " dB"); // "%.2f" var
+    gfx_measurestr(mouse_pos_db, str_w, str_h); // val w, val h
+    lbl_x = x+w-str_w-24; 
+    lbl_y = y+4+1;
+    lbl_w = str_w+16; 
+    lbl_h = 20;
+    wave.draw_Label(lbl_x, lbl_y, lbl_w, lbl_h, r,g,b,a, mouse_pos_db); 
+  );
+);
+
+// == Draw Info ========================================= //
+/*В информацию желательно добавить возможность отображения range в секундах, герцах.
+Можно добавить отобр. текущей ноты в MIDI Pitch mode. 
+Можно добавить отображение range - множителя(для соотв. режимов).*/
+function wave.draw_Info(r,g,b,a)
+  instance(x,y,w,h, offset, div)
+  local(str, str_w, str_h, lbl_x, lbl_y, lbl_w, lbl_h)
+( 
+  str = #; // temporary string
+  lbl_y = y+4+1; // info labels y  
+  lbl_h = 20;    // info labels h
+  // -- Range --------------------------
+  strcpy(str, "Range: ");
+  strcat(str, sprintf(#, "%d", range_spls)); 
+  strcat(str, " samples");
+  gfx_measurestr(str, str_w, str_h);
+  lbl_x = x + 8; 
+  lbl_w = str_w + 16; 
+  wave.draw_Label(lbl_x, lbl_y, lbl_w, lbl_h, r,g,b,a, str);
+  
+  // -- Pause --------------------------
+  this.pause ? (
+    strcpy(str, "Pause");
+      // -- Offset ---------------------
+      this.offset ? (
+        //strcat(str, " Offset: ");
+        strcat(str, ":  ");
+        strcat(str, sprintf(#, "%d", offset)); //offs spls
+        strcat(str, " samples");
+      );
+      gfx_measurestr(str, str_w, str_h);
+      lbl_x += (lbl_w + 16); 
+      lbl_w = str_w + 16;
+      wave.draw_Label(lbl_x, lbl_y, lbl_w, lbl_h, r,g,b,a, str);
+  );
+
+);
+// == Draw Cursor ======================================= //
+function wave.draw_Cursor(r,g,b,a) //TEST
+  instance(x,y,w,h, spos, div)
+  local(last_curs_pos, curs_pos)
+( 
+  /*Разница между посл. поз курсора и текущей - и есть тот кусочек, 
+  который нужно обновлять, то есть не пересчитывать пики полностью, 
+  а только этот участок! Это + 1000% производительности.
+  Главное очень четко все посчитать.*/ 
+  !this.pause ? (
+    gfx_set(r,g,b,a);
+    //gfx_line(x + last_curs_pos, y, x + last_curs_pos, y + h);
+    last_curs_pos = curs_pos = spos/div*0.5;
+    gfx_line(x + curs_pos, y, x + curs_pos, y + h);
+  );
+);
+
+// == Draw Wave ========================================= //
+function wave.Draw()
+  instance(x,y,w,h, ch1, ch2, ch12, Vzoom, div, view_mode, chan_mode, sync_mode)
+  local(hlf_h, axis, axis1, axis2, chan_str, mouse_pos_db, str_w, str_h, a1, a2 )
+( 
+  view_mode = ViewMode.val; // wave view_mode
+  chan_mode = ChanMode.val; // wave chan_mode
+  sync_mode = SyncMode.val; // wave sync_mode 
+  
+  // -- Wave BG color --------
+  gfx_set(0,0,0,1); // wave bg color
+  gfx_rect(x,y,w,h,1);
+  
+  // -- center axis ----------
+  hlf_h = h * 0.5;
+  axis  = y + hlf_h; // Center axis
+  // 110; 144; 76; a = 0.5; // axis color 
+  gfx_set(0.431, 0.565, 0.298, 0.5);
+  gfx_line(x, axis, x+w, axis);
+  
+  //--------------------------
+  gfx_setfont(2,"Tahoma", 16); // db_scale font
+  // -- dependent on the view_mode values --------
+  view_mode ? (     // if view_mode = 2 axis
+    axis1 = y + hlf_h - hlf_h/2; 
+    axis2 = y + hlf_h + hlf_h/2;
+    gfx_a-=0.2;
+    gfx_line(x, axis1, x+w, axis1); // axis1
+    gfx_line(x, axis2, x+w, axis2); // axis2
+    hlf_h = hlf_h * 0.5;
+    // -- db scale -----------
+    wave.draw_DB_Scale(axis1, hlf_h); 
+    wave.draw_DB_Scale(axis2, hlf_h); 
+  ) : (             // if view_mode = 0;
+    axis1 = axis2 = axis;
+    // -- db scale -----------
+    wave.draw_DB_Scale(axis, hlf_h); 
+  );
+  
+  
+  //-- Create waveform Peaks -----------
+  wave.CreatePeaks();
+  
+  //------------------------------------
+  //-- Set col alfa dependent of mode --
+  view_mode == 0 && chan_mode == 0 ? ( // 1 axis and mix "1/2"
+    a1 = ch1.a * ch12.a_mlt; a2 = ch2.a * ch12.a_mlt;
+  ) : (
+    a1 = ch1.a; a2 = ch2.a;
+  );
+      
+  //-- Draw Peaks ----------------------
+  chan_mode == 0 ? ( // 0 = "1/2" = "L/R"
+    wave.draw_Peaks(1, axis1, hlf_h, ch1.r, ch1.g, ch1.b, a1); // chan1
+    wave.draw_Peaks(2, axis2, hlf_h, ch2.r, ch2.g, ch2.b, a2); // chan2
+  ) :
+  chan_mode == 1 ? ( // 1 = "L"
+    wave.draw_Peaks(1, axis1, hlf_h, ch1.r, ch1.g, ch1.b, a1); // chan1
+  ) :
+  chan_mode == 2 ? ( // 2 = "R"
+    wave.draw_Peaks(2, axis2, hlf_h, ch2.r, ch2.g, ch2.b, a2); // chan2
+  );
+     
+  
+  //-- Draw frame ----------------------
+  // 110; 144; 76; a = 1; // frame color
+  wave.draw_Frame(0.431, 0.565, 0.298, 1);
+  //-- Draw info -----------------------
+  gfx_setfont(2,"Tahoma", 17); // info font
+  //150; 200; 100; a = 1; // info color
+  wave.draw_Info(0.588, 0.784, 0.392, 1);
+  //-- Draw MousePos_db ----------------
+  //150; 200; 100; a = 1;  // mouse_pos color
+  wave.draw_MousePos_db(axis, axis1, axis2, hlf_h, 0.588, 0.784, 0.392, 1);
+    
+  //-- Draw Cursor(for tests) ----------
+  //range_sec >= 1 ? wave.draw_Cursor(0.3, 0.3, 0.3, 0.2);
+
+);
+
+
+
+/***************************************************************************************************
+*** Other functions ********************************************************************************
+***************************************************************************************************/
+// == For TimeLoop Mode ================================= //
+function LoopMode.GetRange()
+  instance(last_play_pos, last_samplesblock, range_sec)
+  local(play_step)
+(
+  play_step = play_position - last_play_pos;
+  play_state && play_step < 0 ? (
+   //range_start = play_position;
+   //range_end = last_play_pos + last_samplesblock/srate;
+   range_sec = -play_step + last_samplesblock/srate;
+   wave.spos = 0; // reset position on loop start!!!
+  );
+  last_play_pos = play_position;
+  last_samplesblock = samplesblock;
+  range_sec; // ret range
+);
+
+// == For Midi Mode ===================================== //
+function MidiMode.GetRange()
+  instance(range_sec, note, freq)
+  local(offset,msg1,msg2,msg3)
+(
+  while (midirecv(offset,msg1,msg2,msg3)) (
+     (msg1&240)==144 && msg3!=0 ? (
+       note = msg2;
+       freq = (2^((note-69)/12)) * 440;   // v1
+       //freq = 2^(note/12+3.031);        // v2
+       //freq = (1.05946^msg2) * 8.17742; // v3
+       range_sec = 1/freq;
+     );
+     midisend(offset,msg1,msg2,msg3); // passthrough other events
+  );
+  range_sec; // ret range
+);
+
+
+/***************************************************************************************************
+** Very simple slider-linked button - only for label-sliders buttons! ******************************
+***************************************************************************************************/ 
+function Btn_New(x,y,w,h, r,g,b,a, lbl, sldr_idx, val, maxval)
+(
+  this.x = x; this.y = y; this.w = w; this.h = h; // coord
+  this.r = r; this.g = g; this.b = b; this.a = a; // color
+  this.lbl = lbl;
+  this.sldr_idx = sldr_idx;
+  this.val = val;
+  //this.minval = minval; 
+  this.maxval = maxval;
+);
+
+//--------------------------------------
+function Btn_Draw()
+  instance(x,y,w,h, r,g,b,a, lbl, sldr_idx, val, maxval)
+  local(offs, str, str_w, str_h)
+(  
+  // --- set value -----------
+  this.mouseClick() ? (
+    val < maxval ? slider(sldr_idx)+=1 : slider(sldr_idx) = 0; // minval = 0 
+    val = slider(sldr_idx);
+    slider_automate(2 ^ (sldr_idx-1)); // upd to slider
+  );
+  
+  val != slider(sldr_idx) ? val = slider(sldr_idx); // upd from slider
+  
+  // --- draw ----------------
+  this.mouseIN() ? (
+    gfx_set(0,0,0,0.4);
+    gfx_rect(x+1,y+1,w,h,0); // shadow
+    gfx_set(r,g,b,0.25);
+    gfx_rect(x,y,w,h,0); // frame
+  );
+    
+  str = #; // tmp str
+  strcpy(str, lbl);
+  strcat(str, strcpy_fromslider(#, slider(sldr_idx)));
+  gfx_measurestr(str, str_w, str_h);
+  w = str_w + 16; // update w
+  
+  gfx_set(0,0,0,0.4); // str shadow col
+  offs = (h - gfx_texth) * 0.5; 
+  gfx_x = x + 9; gfx_y = y + offs + 1;
+  gfx_drawstr(str);
+  
+  gfx_set(r,g,b,a);
+  gfx_x = x + 8; gfx_y = y + offs;
+  gfx_drawstr(str);
+
+);
+
+
+/***************************************************************************************************
+** INIT ********************************************************************************************
+***************************************************************************************************/
+/* Note: We can use "ext_noinit=1", but we want to have a buffer reset in different situations:
+On playback start, stop, seek(depends on the settings) etc. And in addition we have @serialize section. 
+This is a simple solution.*/
+
+function INIT()
+  local(r,g,b,a)
+(
+  /*Координаты wave - (x,y,w,h) задаются для самой волны(пространство внутри рамки). 
+  Координаты внешней рамки, соответственно, получаются чуть другие - см. wave.draw_Frame.*/
+  /*Оффсет для sbuf = 65536(на pbuf и всякую хрень).*/
+  //--------------------------
+  // function args = (x,y,w,h, sbuf, pbuf); // sbuf, pbuf - buffers offsets 
+  wave.Init(_Ls+1, _Up, 800, 408, 65536, 0);
+  //--------------------------
+  // function args = (x,y,w,h,  r,g,b,a,  lbl, sldr_idx, val, maxval)
+  r = 150/255; g = 200/255; b = 100/255; a = 1; // buttons color
+  SyncMode.Btn_New( 27,402,120,20, r,g,b,a, "Sync: ",    4, 0, 3);
+  ViewMode.Btn_New(155,402,92,20, r,g,b,a, "View: ",    5, 0, 1);
+  ChanMode.Btn_New(255,402,94,20, r,g,b,a, "Chan: ", 6, 0, 2);
+  //--------------------------
+  Colors.Btn_New(667,402,144,20, r,g,b,a, "Colors: ", 7, 0, 1);
+  ColMenu.New(667,298,144,100,r,g,b,a);
+  //--------------------------
+  INIT = 1;
+);
+
+//******************************************************************************
+//------------------------------------------------------------------------------
+!INIT ? INIT() : wave.ResetBuffer(); // Init(on first start) else reset buf
+  
+
+@serialize
+/*Важно, если есть сериализация, все переменные и память не инициализируются 
+в ноль по умолчанию при плэй-стоп т.п., только намеренно в init нужно прописывать.*/
+
+// -- Serialize colors ---
+function Serialize_Color()
+(
+  file_var(0, this.r); 
+  file_var(0, this.g); 
+  file_var(0, this.b); 
+  file_var(0, this.a);
+);
+
+//------------------------
+wave.ch1.Serialize_Color();
+wave.ch2.Serialize_Color();
+
+
+@slider
+range_sec = slider1;
+wave.Vzoom = slider3;
+SyncMode.val = slider4;
+ViewMode.val = slider5;
+ChanMode.val = slider6;
+
+@block
+/*Можно и не считать range когда wave.pause = 1, однако, считая,
+мы получим range моментально после, когда отпустим паузу - это удобно.*/
+// TimeLoop Mode ---------------------------------
+SyncMode.val == 0 ? (
+  range_sec = LoopMode.GetRange(); 
+  while(range_sec > max_range_sec + 0.001) ( range_sec*=0.5 ); // verify range
+) :
+// Midi Pitch Mode -------------------------------
+SyncMode.val == 1 ? (
+  range_sec = MidiMode.GetRange();
+  range_sec *= 2^(slider2); // multiply
+) :
+// Tempo-sync Mode -------------------------------
+SyncMode.val == 2 ? (
+  //range_sec = 60/tempo * 2^(slider2);    // min 1/4 test
+  range_sec = (60/tempo)/4 * 2^(slider2);  // min 1/16 test
+  while(range_sec > max_range_sec + 0.001) ( range_sec*=0.5 );
+) :
+SyncMode.val == 3 ? (
+  range_sec = slider1;
+);
+
+//-- If wave paused  -----------------------------
+wave.pause ? range_sec = slider1;
+
+
+//-- Verify Range --------------------------------
+range_sec <= 0 ? range_sec = 1;
+slider1 = range_sec; // range_sec to slider
+range_spls = round(range_sec * srate); // range to samples
+
+//-- Update Wave values(divfactor and sbuffer size) ---------
+wave.div = range_spls/wave.w; // division factor
+wave.sbuf_sz = range_spls*2;  // wave samplebuffer size(1-2 channels)
+
+
+@sample
+// -- Get input samples ------
+wave.SamplesToBuffer(spl0, spl1);
+
+@gfx 858 445
+
+char = gfx_getchar(); // Можно перенести - Mouse - module
+
+//******************************************************************************
+/*Надо потом поправить Range(Hzoom)-Offset, а лучше вообще всю функцию.
+все работает, просто переписать четко, понятно и красиво, сейчас чушь какая-то.*/
+//-- Get Mouse  ----------------------------------------------------------------
+function wave.GetMouse()
+  instance(x,y,w,h)
+  local(K, offs_min)
+(
+  //-- Change Range(aka H Zoom) ----------------------------
+  mouse_wheel ? (
+    // Free mode(or wave paused) -----------------
+    SyncMode.val == 3 || this.pause ? (
+      K = mouse_wheel * this.div;     
+      range_sec = slider1 -= K/srate;
+      slider1 = minmax(slider1, min_range_sec, max_range_sec);
+      this.pause && slider1 < max_range_sec && slider1 > min_range_sec ? (
+        slider1 = minmax(slider1, min_range_sec, last_range_sec); // regard last range
+        offs_min = (range_sec - last_range_sec)*srate;
+        offs_min = min(offs_min, 0); // не вылазь за ноль 
+        this.offset -= K * (mouse_x-x)/w; 
+        this.offset = minmax(this.offset, offs_min, 0); // offs_max = 0;
+      );
+    ) : (
+      // MIDI, Tempo Sync Mode(mlt factor) -------
+      SyncMode.val == 1 || SyncMode.val == 2 ? (
+        slider2 -= sign(mouse_wheel);
+        slider2 = minmax(slider2, 0, 6);
+      );
+    );
+    
+  );  
+  
+  //-- V Zoom, Offset --------------------------------------
+  !(mouse_cap&1) ? this.isCaptured = 0; // Reset cap state
+  
+  //-- Capture(ignore btns area) -------
+  this.mouseDown() && mouseINrect(x, y+24, w, h-48) ? (
+    this.isCaptured = 1;  // Capture wave
+    this.cap_x = mouse_x;
+    this.cap_y = mouse_y;
+    this.Vzoom.cap_val = this.Vzoom;
+  );
+  
+  //-- V Zoom --------------------------
+  this.isCaptured && !Shift ? (
+    this.Vzoom = this.Vzoom.cap_val * DB2VAL((mouse_down_y-mouse_y)/20);
+    this.Vzoom = minmax(this.Vzoom, 1, DB2VAL(150) );
+    slider3 = this.Vzoom;
+  );
+  
+  //-- Offset --------------------------
+  this.pause && this.isCaptured && Shift ? (
+    this.offset += this.div * (mouse_x-mouse_last_x);
+    offs_min = (range_sec - last_range_sec)*srate;
+    this.offset = minmax(this.offset, offs_min, 0); // offs_max = 0;
+  );
+  
+  //-- Pause ---------------------------
+  this.mouseMClick() ? (
+    this.pause = !this.pause;
+    this.offset = 0;
+    last_range_sec = range_sec;
+  );
+  
+);
+
+//************************************************
+//-- Update coords  ------------------------------
+function UpdateCoords()
+(  
+  wave.w = max(700, gfx_w - wave.x - _Rs - 1);
+  wave.h = max(268, gfx_h - wave.y - _Dn - 1);
+  wave.h -= (wave.h % 4); // Must always be a multiple of four for full symmetry!
+  //--------------------
+  SyncMode.x = wave.x + 8;  // upd sync btn x
+  //ViewMode.x = SyncMode.x + SyncMode.w + 8; // view btn x
+  //ChanMode.x = ViewMode.x + ViewMode.w + 8; // chan btn x
+  ViewMode.x = max(ViewMode.x, SyncMode.x + SyncMode.w + 8); // view btn x
+  ChanMode.x = max(ChanMode.x, ViewMode.x + ViewMode.w + 8); // chan btn x
+  SyncMode.y = ViewMode.y = ChanMode.y = wave.y + wave.h - 20 - 4; // btns y
+  //--------------------
+  Colors.x = ColMenu.x = wave.x + wave.w - Colors.w - 8; // col btn x
+  Colors.y = SyncMode.y; // col btn y
+  //--------------------
+  ColMenu.y = Colors.y - ColMenu.h - 4; // col menu y
+  ColMenu.w = Colors.w; // col menu w
+);
+
+//************************************************
+//-- Change Colors -------------------------------
+function ChangeColors()
+(
+  Colors.val == 0 ? (
+    ColMenu.Draw(wave.ch1);
+  ) :
+  Colors.val == 1 ? (
+    ColMenu.Draw(wave.ch2);
+  ); 
+
+);
+
+/*******************************************************************************
+** DRAW ************************************************************************
+*******************************************************************************/
+function DRAW()
+( 
+  UpdateCoords();
+  // -- waveforms ------------
+  wave.Draw();
+  !(Show_ColMenu && ColMenu.mouseIN()) ? wave.GetMouse();
+  // -- buttons --------------
+  gfx_setfont(2,"Tahoma", 17); // buttons font
+  SyncMode.Btn_Draw();
+  ViewMode.Btn_Draw();
+  ChanMode.Btn_Draw();
+  // -- colors ---------------
+  /*wave.mouseDblClick() && mouseINrect(wave.x, wave.y+24, wave.w, wave.h-48) && 
+  !ColMenu.mouseIN() ? Show_ColMenu = !Show_ColMenu;*/
+  /*mouse_rdown ? (
+    gfx_x = mouse_x;
+    gfx_y = mouse_y; 
+    ret = gfx_showmenu("Set Colors|Help")
+  );*/
+  
+  char == 43 ? Show_ColMenu = !Show_ColMenu; // "+" ( Shift + "=")
+  Show_ColMenu ? (
+    Colors.Btn_Draw();
+    ChangeColors();
+  );
+  
+);
+
+
+//***************************************************************
+/* Можно не морочить голову с пересчетами, а просто снизить на 10-15 фпс на больших рангах!
+Все равно там фпс похеру абсолютно. Как в Рипере при записи. Пока пусть так будет.*/
+GetMouseState();
+DRAW();
+SetMouseLastState();
+//***************************************************************

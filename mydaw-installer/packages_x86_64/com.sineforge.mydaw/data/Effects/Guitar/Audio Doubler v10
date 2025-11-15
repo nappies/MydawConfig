@@ -1,0 +1,559 @@
+desc:Audio Doubler v10 (with Filter EQ && 2 chanel FX)
+
+// options:want_all_kb
+// options:no_meter
+
+/* - EUGEN27771 Script  - */
+// import WaveDisplayForAudioDubler v1
+
+// -- In-out sliders ------
+slider1:0<-30,6,0.01> Sound Out dB
+// -- Pan section ---------
+slider3:0<-100,100,0.1> Pan
+slider4:Pan_intensi=0<0,1,0.1> -Pan Corection Intensity//перед именем - слайдер скрыт
+// -- Detector Sliders ----
+slider6:0<-30,12,0.01> Input Detector Gain dB
+slider7:-30<-60,0,0.01> Threshold Detector dB
+slider8:6.2<3,12,0.01> Sensitivity Detector dB
+// -- Detector Double Tripping --
+slider10:60<20,20000,1> Triger Time ms
+slider11:Trig_diff=0<0,5,1> -Triger Time different
+// --- Delay Section ---------
+slider13:6<1,30,1> Min Delay ms
+slider14:26<1,30,1> Max Delay ms
+slider15:1<0.1,30,1> -Next Delay ms
+
+slider17:1<1,30,1> -Delay L CrossFade ms
+slider18:1<1,30,1> -Delay R CrossFade ms
+
+slider21:x_r=0<0,1,0.01> -CrossFade
+
+// -- LP-HP Filter Section ------------------
+slider23:LPFreq=6000<1000,20000,1> Lowpass Hz
+slider24:HPFreq=350<20,1000,1> Hipass Hz
+
+slider26:Preview=0<0,2,1{Normal Out, Filter Out, Normal Out+ Marker}> -Preview
+
+slider28:two_chan_FX=0<0,2,1{Stereo, Right, Left}> Channels FX
+
+slider30:Divfactor=200<50,2000,10> Semples in peak
+
+////////////////////////////////////////////////////////////////////////////////////////
+@init
+//-- CrossFade section ---------------------------
+AMP_DB = 8.68588963806504;
+src_vol = tgt_vol = exp(0/AMP_DB); //не используется
+src_pan = tgt_pan = 0.01*slider3;
+//------------------------------------------------
+ext_noinit = 1; // -- start-stop refresh
+envOut1 = 0;
+envOut2 = 0;
+retrig_cnt = 10^5;
+det_velo_smpls = 1;
+del_step = 1/1000*srate;
+next_delay = 8; // start plugins delay
+x_r = 0; // start active chanel (0=active)
+cf = 0;
+Trig = 0;
+next_delay_s = 8;
+// delay_L = delay_R = next_delay_s;
+delay_L = 8;
+delay_R = 16;
+delay_C = 2; // 2 ms latency in Stereo Chanels FX
+
+buf_L = floor(delay_L/1000*srate); // ofset = 0
+buf_R = floor(delay_R/1000*srate) + 5800; // ofset = 3000
+// buf_C = floor(delay_C/1000*srate) + 6000; // ofset = 6000
+
+ext_1 = floor(next_delay_s/1000*srate);
+n_d = 0; // локатор для смены направления прироста дилея
+cf_time = 1; // time CrossFade ms
+cf_speed = 1/(cf_time/1000 * srate); // 1 spl speed
+pan_law = 6; // Pan Law
+
+//------------------------------------------------
+attack1  = 1/1000;   //1<0.1,5,0.01>-1 attack(fast) ms
+attack2  = 7/1000;   //7<2,50,0.1>-2 attack(slow) ms
+release1 = 10/1000;  //10<0.1,50,0.1>-1 release ms
+release2 = 15/1000;  //15<2,50,1>-2 release ms
+// -- ga, gr coeff -----------
+ga1 = exp(-1/(srate*attack1));
+gr1 = exp(-1/(srate*release1));
+ga2 = exp(-1/(srate*attack2));
+gr2 = exp(-1/(srate*release2));
+
+//-- GFX -----------------------------------------
+R = 20; G = 20; B = 20;
+gfx_clear = R+G*256+B*65536;
+
+
+// == Init Waveform ====================================== //
+function wave.Init(x,y,w,h, mem_offs) // args = x,y,w,h coord and buf memory offs(это важно)
+(
+  this.x = x; this.y = y;
+  this.w = w; this.h = h;
+  this.buf = mem_offs;     // peaks buf offs, must NOT cross other used mem slots!
+  this.Vzoom = 1;          // vertical zoom
+  // this.div = 200;    // divfactor(smpls in peak)
+  this.min_div = 40;//400; // divfactor min
+  this.max_div = 4000;     // divfactor max
+);
+
+wave.Init(30,30,815,250, 12000); // init wave - (x,y,w,h, mem_offs)
+val_delay_lab = "Delay L =";
+
+// == Build Waveform ==================================== //
+function wave.Build(input, trig_mrk)    // args = sample input and trig velo(if>0)
+// instance(buf, min_peak,max_peak,max_trig_mrk, div, w, spos, ppos)
+instance(buf, min_peak,max_peak,max_trig_mrk, w, spos, ppos)
+local(buf_sz)
+(
+  min_peak = min(min_peak, input);   // min peak
+  max_peak = max(max_peak, input);   // max peak
+  max_trig_mrk = max(max_trig_mrk, trig_mrk); // max_trig_mrk in cur peak
+  div = Divfactor; // divfactor(smpls in peak)
+
+  // -- Save peaks - 0=min_peak, 1=max_peak, 2=max_trig_mrk; etc
+  spos >= div ? (
+    // clear buf, reset peak pos ----
+    buf_sz = w*3;
+    ppos>=buf_sz ? (
+      memset(buf, 0, buf_sz); // clear peak buf
+      ppos = 0;  // reset peak pos cnt
+    );
+
+    // save values to buf -------
+    buf[ppos]   = min_peak; // min
+    buf[ppos+1] = max_peak; // max
+    buf[ppos+2] = max_trig_mrk; // max_trig_mrk
+    ppos+=3;
+    // reset min-max values -----
+    min_peak = 10; max_peak = -10; // reset min-max peaks(v1-draw)
+    //min_peak = max_peak = 0;     // reset min-max peaks(v2-draw)
+    max_trig_mrk = 0;
+    //---------------------------
+    spos = 0;        // reset smpl pos cnt
+    wave.redraw = 1; // need redraw wave
+  );
+
+  //-----------------------------
+  spos+=1; // upd smpl pos counter
+
+);
+
+// == Draw Waveform ===================================== //
+function wave.Draw_waveform(Threshold)  // args = treshold (for tresh lines)
+instance(x,y,w,h, buf, Vzoom, div, min_div, max_div)
+local(sx, hlf_h, axis, p, min_peak, max_peak, last_min_peak,last_max_peak, thresh_line)
+(
+  //-- Draw bg, cnt --------
+  gfx_set(0.04,0.04,0.04,1);
+  gfx_rect(x-1,y,w+2,h+1,1);
+  gfx_set(0.2,0.2,0.2,1);
+  gfx_rect(x-1,y,w+2,h+1,0);
+
+  // -- draw wave ----------
+  hlf_h = h/2;
+  axis = y+hlf_h;
+  sx = x; // start draw x-pos
+  p = 0;  // peak cnt
+  last_min_peak = last_max_peak = 0;
+  loop(w,
+    // -- wave peaks -------
+    min_peak = hlf_h * buf[p] * Vzoom;
+    max_peak = hlf_h * buf[p+1] * Vzoom;
+    min_peak = min( max(min_peak, -hlf_h), hlf_h); // verify range
+    max_peak = min( max(max_peak, -hlf_h), hlf_h); // verify range
+    gfx_set(0.6,0.6,0.6,0.5);
+    gfx_line(sx, axis-min_peak, sx, axis-max_peak);
+
+    // -- wave contour -----
+    gfx_set(0.6,0.6,0.6,0.8);
+    gfx_line(sx-1, axis-last_min_peak, sx, axis-min_peak, 1);
+    gfx_line(sx-1, axis-last_max_peak, sx, axis-max_peak, 1);
+    last_min_peak = min_peak;
+    last_max_peak = max_peak;
+
+    // -- trigger markers --
+    buf[p+2] ? (
+      gfx_set(0.7,0.7,0.1,1);
+      velo_y  = max(y+h - h * buf[p+2], y); // v2
+      gfx_line(sx-1, y+h-1, sx-1, velo_y);
+      gfx_circle(sx, velo_y, 2, 1);
+      gfx_set(0.3,0.4,0.7,1);
+    );
+
+    //----------------------
+    p+=3;   // upd peak cnt
+    sx+=1;  // upd sx cnt
+  );
+
+  // -- threshold_lines ----
+  thresh_line = hlf_h * Threshold * Vzoom;
+  thresh_line < hlf_h ? (
+    gfx_set(1, 0.5, 0, 0.3);
+    gfx_line(x, axis-thresh_line, x+w, axis-thresh_line);
+    gfx_line(x, axis+thresh_line, x+w, axis+thresh_line);
+  );
+
+  //-- Zoom ----------------------------
+  //-- Horisontal --
+  ( mouse_x > x && mouse_x < x+w &&
+    mouse_y > y && mouse_y < y+h; ) ? (
+      ( mouse_wheel<0 ? div = min(max_div, ceil(div/=0.8) );
+      mouse_wheel>0 ? div = max(min_div, ceil(div*=0.8) );
+      mouse_wheel = 0;
+    );
+  );
+
+  //-- Vertical ----
+  ( mouse_ox > x && mouse_ox < x+w && mouse_oy > y && mouse_oy < y+h; ) ? (
+    (mouse_cap&1) ? ( // -- Vertical v1
+      mouse_last_y-mouse_y>0 ? Vzoom = min(10, Vzoom+=0.2 );
+      mouse_last_y-mouse_y<0 ? Vzoom = max(1,  Vzoom-=0.2 );
+    );
+  );
+
+);
+//////////////////////////////////////////////////////////////
+
+//-- Simple Filter EUGEN27771 -------------------------------
+function FilterB.SetValues(type, FreqHz, samplerate)
+local(sqr2, c, c2, csqr2, d)
+instance(active, ampIn0, ampIn1, ampIn2, ampOut1, ampOut2)
+(
+  active = (type == 0 && FreqHz < 19999) || (type == 1 && FreqHz > 1);
+  active ? (
+    type ? (
+      // Hi Pass //
+      sqr2 = 1.414213562;
+      c = tan(($pi/samplerate) * FreqHz );
+      c2 = c * c;
+      csqr2 = sqr2 * c;
+      d = (c2 + csqr2 + 1);
+      ampIn0 = 1 / d;
+      ampIn1 = -(ampIn0 + ampIn0);
+      ampIn2 = ampIn0;
+      ampOut1 = (2 * (c2 - 1)) / d;
+      ampOut2 = (1 - csqr2 + c2) / d;
+    ) : (
+      // Low Pass //
+      sqr2 = 1.414213562;
+      c = 1 / tan(($pi/srate) * FreqHz );
+      c2 = c * c;
+      csqr2 = sqr2 * c;
+      d = (c2 + csqr2 + 1);
+      ampIn0 = 1 / d;
+      ampIn1 = ampIn0 + ampIn0;
+      ampIn2 = ampIn0;
+      ampOut1 = (2 * (1 - c2)) / d;
+      ampOut2 = (c2 - csqr2 + 1) / d;
+    );
+  );
+
+);
+//----------------------------
+// Filter in = input sample
+// Filter out = out sample
+function FilterB.Apply(in)
+instance(active, ampIn0, ampIn1, ampIn2, ampOut1, ampOut2, dlyIn1, dlyIn2, dlyOut1, dlyOut2, out)
+(
+  out = in;
+  active ? (
+    out = (ampIn0 * in) + (ampIn1 * dlyIn1) + (ampIn2 * dlyIn2) - (ampOut1 * dlyOut1) - (ampOut2 * dlyOut2);
+    dlyOut2 = dlyOut1;
+    dlyOut1 = out;
+    dlyIn2 = dlyIn1;
+    dlyIn1 = in;
+  );
+
+  out;
+);
+
+///////////////////////////////////////////////////////////////////////////////////////
+@slider
+// --- Vol Pan Section -------
+tgt_vol = exp(0/AMP_DB);
+tgt_pan = 0.01*slider3;
+panlaw = exp(pan_law/AMP_DB);
+pancomp = (panlaw > 1.0 ? 1.0/panlaw : panlaw);
+// --- Delay Section ---------
+
+// -- IN-OUT sliders - values-----------
+In_gain = 10^(slider6/20);
+Dry_Out = 10^(slider1/20);
+
+// -- Detector sliders - values --------
+Threshold = 10^(slider7/20);
+Sensitivity = 10^(slider8/20);
+Retrig = (slider10/1000)*srate;
+ThresholdDraw = abs((5^(slider7/30))/1.2);
+
+//-- LP L-R channels ---------
+LP.FilterB.SetValues(0, LPFreq, srate);
+//-- HP L-R channels ---------
+HP.FilterB.SetValues(1, HPFreq, srate);
+
+////////////////////////////////////////////////////////////////////////////////////////
+@sample
+
+// -- Delay ------------------------------
+min_delay = floor(slider13/1000*srate);
+max_delay = floor((slider14+1)/1000*srate); // +1 из за округления floor вниз до целого
+
+// -- Filter  -----------------------------
+fltr_out = LP.FilterB.Apply((spl0+spl1)/2); // channels sum
+fltr_out = HP.FilterB.Apply(fltr_out);
+
+// -- Get Input ---------------------
+input = fltr_out * In_gain;
+envIn = abs(input); // abs input value for enelopes etc
+
+// -- Env followers ------------------------------
+envOut1 < envIn ? ( // fast enelope
+  envOut1 = envIn + ga1*(envOut1-envIn)
+) : (
+  envOut1 = envIn + gr1*(envOut1-envIn)
+);
+
+envOut2 < envIn ? ( // slow enelope
+  envOut2 = envIn + ga2*(envOut2-envIn)
+) : (
+  envOut2 = envIn + gr2*(envOut2-envIn)
+);
+
+// -- Trigger -------------------------
+retrig_cnt > Retrig ? (
+  envOut1 > Threshold && envOut1/envOut2 > Sensitivity ? (
+    Trig = 1;
+    retrig_cnt = 0;
+    trig_mrk = 1.2;
+    next_delay_s = floor(next_delay*1000/srate);
+    slider15 = next_delay_s;
+    sliderchange(slider15);
+  );
+) : (
+  envOut2 = envOut1; // уравнивает огибающие
+  retrig_cnt+=1;
+);
+
+// -- random delay -------------------
+next_delay >= min_delay && n_d == 0 ? (
+  next_delay += 1;
+  next_delay >= max_delay ? (
+    n_d = 1;
+    next_delay = max_delay;
+  );
+) : (
+  next_delay -= 1;
+  next_delay <= min_delay ? (
+    n_d = 0;
+    next_delay = min_delay;
+  );
+);
+
+// -- CrosFade -------------------------
+
+Trig == 1 ? (
+  x_r >= 0 && cf == 0 ? (
+    x_r += cf_speed; // start CrosFade R Move 0 to 1
+    x_r >= 1 ? (
+      x_r = 1;
+      cf = 1;
+      // val_delay_lab = "Delay L =";
+      delay_L = next_delay_s;
+      buf_L = floor(delay_L/1000*srate); // ofset = 0
+      slider17 = delay_L;
+      sliderchange(slider17);
+      Trig = 0;
+    );
+  ):(
+    x_r -= cf_speed; // start CrosFade R Move 1 to 0
+  );
+  x_r <= 0 ? (
+    x_r = 0;
+    cf = 0;
+    // val_delay_lab = "Delay R =";
+    delay_R = next_delay_s;
+    buf_R = floor(delay_R/1000*srate) + 5800; // ofset = 3000
+    slider18 = delay_R;
+    sliderchange(slider18);
+    Trig = 0;
+  );
+  buf_C = floor(delay_C/1000*srate) + 11600; // ofset = 6000
+);
+
+// --- Vol Pan Section -------
+d_pan = (tgt_pan-src_pan)/samplesblock;
+tpan = src_pan;
+src_pan = tgt_pan;
+tpan += d_pan;
+adj = 1;
+
+panlaw != 1.0 ? (
+  panlaw > 1.0 ? adj *= panlaw;
+  panatt = abs(tpan);
+  adj *= pancomp+(1.0-pancomp)*(2.0/(2.0-panatt)-1.0);
+);
+
+adj0 = adj1 = adj;
+tpan < 0.0 ? adj1 *= 1.0+tpan;
+tpan > 0.0 ? adj0 *= 1.0-tpan;
+
+// --- Delay Section ---------
+buf_Lpos[0] = spl1 ;
+buf_Lpos = buf_Lpos + 1;
+buf_Lpos >= buf_L ? buf_Lpos = 0;
+
+buf_Rpos[0] = spl1 ;
+buf_Rpos = buf_Rpos + 1;
+// buf_Rpos >= buf_R ? buf_Rpos = 3000;
+buf_Rpos >= buf_R ? buf_Rpos = 5800; // ofset = 3000
+
+buf_Cpos[0] = spl1 ;
+buf_Cpos = buf_Cpos + 1;
+// buf_Cpos >= buf_C ? buf_Cpos = 6000;
+buf_Cpos >= buf_C ? buf_Cpos = 11600; // ofset = 6000
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+// 0 = Norm Out, 1 = filter out, 2 = Norm + Marker Out
+Preview == 0 ? (
+  two_chan_FX == 0 ? ( // if 2 channel FX
+    spl0 = buf_Cpos[0]*sqrt(1-x_r) + buf_Rpos[0]*sqrt(x_r);
+    spl1 = buf_Lpos[0]*sqrt(1-x_r) + buf_Cpos[0]*sqrt(x_r);
+    pdc_delay = delay_C/1000*srate;
+  );
+
+  two_chan_FX == 1 ? ( // if Left channel FX
+    spl0 = buf_Lpos[0]*sqrt(1-x_r) + buf_Rpos[0]*sqrt(x_r);
+    spl1 = spl1;
+    pdc_delay = 0;
+  );
+
+  two_chan_FX == 2 ? ( // if Right channel FX
+    spl0 = spl0;
+    spl1 = buf_Lpos[0]*sqrt(1-x_r) + buf_Rpos[0]*sqrt(x_r);
+    pdc_delay = 0;
+  );
+
+  spl0 *= adj0;
+  spl1 *= adj1;
+  spl0*=Dry_Out;
+  spl1*=Dry_Out;
+);
+
+Preview == 1 ? (
+  spl0 = input/2;
+  spl1 = input/2;
+  pdc_delay = 0;
+);
+
+Preview == 2 ? (
+  two_chan_FX == 0 ? ( // if 2 channel FX
+    spl0 = spl0*sqrt(x_r) + buf_Rpos[0]*sqrt(1-x_r);
+    spl1 = buf_Lpos[0]*sqrt(x_r) + spl1*sqrt(1-x_r);
+    pdc_delay = delay_C/1000*srate;
+  );
+
+  two_chan_FX == 1 ? ( // if Left channel FX
+    spl0 = buf_Lpos[0]*sqrt(x_r) + buf_Rpos[0]*sqrt(1-x_r);
+    spl1 = spl1;
+    pdc_delay = 0;
+  );
+
+  two_chan_FX == 2 ? ( // if Right channel FX
+    spl0 = spl0;
+    spl1 = buf_Lpos[0]*sqrt(x_r) + buf_Rpos[0]*sqrt(1-x_r);
+    pdc_delay = 0;
+  );
+
+  spl0 *= adj0;
+  spl1 *= adj1;
+  spl0*=Dry_Out;
+  spl1*=Dry_Out;
+  spl0 = spl0+trig_mrk;
+  spl1 = spl1+trig_mrk;
+);
+
+
+// == For GFX =========================================== //
+
+wave.Build(input, trig_mrk); // args = sample input and trig velo(if>0)
+trig_mrk=0;
+
+@gfx 876 310
+//-- Draw Wave ------------------
+wave.redraw ? (
+  wave.Draw_waveform(ThresholdDraw); // draw
+  wave.redraw = 0;      // reset redraw state
+);
+
+// gfx_x = 30; gfx_y = 10;
+// gfx_set(0.7,0.7,0.1,1);
+// gfx_drawstr(val_delay_lab);
+//
+// val_delay = next_delay_s;
+// val_delay_lab2 = "ms";
+// str_delay = sprintf(#, "%g %s", val_delay, val_delay_lab2);
+// gfx_x = 110; gfx_y = 10;
+// gfx_set(0.7,0.7,0.1,1);
+// gfx_drawstr(str_delay);
+
+gfx_x = 30; gfx_y = 10;
+gfx_set(0.8,0.8,0.1,1);
+gfx_drawstr("Delay L =");
+
+val_delay = delay_L;
+val_delay_lab2 = "ms";
+str_delay = sprintf(#, "%g %s", val_delay, val_delay_lab2);
+gfx_x = 110; gfx_y = 10;
+gfx_set(0.8,0.8,0.1,1);
+gfx_drawstr(str_delay);
+
+gfx_x = 230; gfx_y = 10;
+gfx_set(0.8,0.4,0.5,1);
+gfx_drawstr("Delay R =");
+
+val_delay = delay_R;
+val_delay_lab2 = "ms";
+str_delay = sprintf(#, "%g %s", val_delay, val_delay_lab2);
+gfx_x = 310; gfx_y = 10;
+gfx_set(0.8,0.4,0.5,1);
+gfx_drawstr(str_delay);
+
+gfx_x = 736; gfx_y = 10;
+gfx_set(0.6,0.6,0.6,1);
+gfx_drawstr("sRate =");
+
+newsrate = srate;
+str_newsrate = sprintf(#, "%g", newsrate);
+gfx_x = 796; gfx_y = 10;
+gfx_set(0.6,0.6,0.6,1);
+gfx_drawstr(str_newsrate);
+
+// newbuf_L = buf_L;
+// lab_1 = "buf_L=";
+// str_newsrate = sprintf(#, "%s %g", lab_1, newbuf_L);
+// gfx_x = 220; gfx_y = 10;
+// gfx_set(0.7,0.7,0.7,1);
+// gfx_drawstr(str_newsrate);
+//
+// newbuf_R = buf_R;
+// lab_2 = "buf_R=";
+// str_newsrate = sprintf(#, "%s %g", lab_2, newbuf_R);
+// gfx_x = 360; gfx_y = 10;
+// gfx_set(0.7,0.7,0.7,1);
+// gfx_drawstr(str_newsrate);
+//
+// newbuf_C = buf_C;
+// lab_3 = "buf_C=";
+// str_newsrate = sprintf(#, "%s %g", lab_3, newbuf_C);
+// gfx_x = 480; gfx_y = 10;
+// gfx_set(0.7,0.7,0.7,1);
+// gfx_drawstr(str_newsrate);
+
+//-----------------------------------------
+
+char = gfx_getchar(); // -- без него не пашет перехват mod-keys!

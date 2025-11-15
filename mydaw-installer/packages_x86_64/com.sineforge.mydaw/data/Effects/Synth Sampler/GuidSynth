@@ -1,0 +1,49 @@
+desc:Guide Synth
+// Author: T.Rochebois 08/2016
+slider3:sl_R2=1.0001<0,4,0.000001>Ratio 2
+slider4:sl_I2=1.5<0,3,0.0001>I2
+
+slider6:sl_R1=0.9997<0,3,0.000001>Ratio 1
+slider7:sl_I1=0.5<0,3,0.0001>I1
+
+slider9:sl_R0=1<0,3,0.000001>Ratio 0
+
+slider11:sl_A=-3<-3,0,0.001>Attack
+slider12:sl_R=0<-2,1,0.001>Release
+// ___________________________________________________________________
+@init
+function I0(x)( x+=16;x-=x|0;  (6*x-6)*x+1              );
+function I1(x)( x+=16;x-=x|0;  ((2*x-3)*x+1)*x          );
+function I2(x)( x+=16;x-=x|0;  ((0.5*x-1)*x+0.5)*x*x    );
+function AA2_para(dp m)
+instance(p x0 x1 y0 y1 I2_0 I2_1 I1_0 I1_1 out)(
+  p += dp;  p >= 1 ? (p -= 1; x0 -= 1; y0 -= 1; );
+  x1 = x0; I2_1 = I2_0; x0 = p + m;
+  I2_0 = I2(x0); 
+  y1 = y0; I1_1 = I1_0; y0 = 0.5 * (x0 + x1);
+  I1_0 = x0 == x1 ? I1(y0) : (I2_0 - I2_1)/(x0 - x1);
+  out  = y0 == y1 ? I0(y0) : (I1_0 - I1_1)/(y0 - y1);
+);
+// ___________________________________________________________________
+@block
+while (midirecv(offset, msg1, msg23)) (
+  msg2 = msg23 & 0x7F; msg3 = msg23 >> 8; status = msg1 & $xF0;
+  status == $x80 ? ( status = $x90; msg3 = 0; );  // note off
+  status == $x90 ? (                              // note on
+    msg3 == 0 ? (msg2 == note ? gate = 0;)
+  : ( gate = sqrt(msg3 * (1/127)); note = msg2;
+      dp = (440/srate)*2^((note-69)*(1/12));
+    );
+  );
+  midisend(offset, msg1, msg23);
+);
+dp0 = sl_R0 * dp;  dp1 = sl_R1 * dp;  dp2 = sl_R2 * dp;
+A = 1/(srate*10^sl_A);
+R = 1/(srate*10^sl_R);
+// ___________________________________________________________________
+@sample
+env += env>gate ? R*(gate-env) : A*(gate-env);
+y2 = osc2.AA2_para(dp2,0);
+y1 = osc1.AA2_para(dp1, env*sl_I2 * y2);
+y0 = osc0.AA2_para(dp0, (0.5+0.5*env)*sl_I1 * y1);
+spl0 = spl1 = min(3,max(-3,env*y0));

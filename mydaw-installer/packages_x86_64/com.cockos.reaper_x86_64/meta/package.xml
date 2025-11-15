@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package>
+    <DisplayName>Cockos Reaper</DisplayName>
+    <Description>Install REAPER with MyDaw custom configuration</Description>
+    <Version>2.5.0</Version>
+    <ReleaseDate>2025-10-07</ReleaseDate>
+    <Name>com.cockos.reaper_x86_64</Name>
+    <Default>true</Default>
+    <ForcedInstallation>true</ForcedInstallation>
+	<RequiresAdminRights>true</RequiresAdminRights>
+    <Essential>true</Essential>
+    <Script>installscript.qs</Script>
+	<Licenses>
+        <License name="Cockos REAPER License Agreement" file="rpr_license.txt"/>
+    </Licenses>
+    <DownloadableArchives>
+        <!-- Archives will be added dynamically by the script -->
+    </DownloadableArchives>
+</Package>

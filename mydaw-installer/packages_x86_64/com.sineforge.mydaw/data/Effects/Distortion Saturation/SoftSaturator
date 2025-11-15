@@ -1,0 +1,234 @@
+desc:TrackSat (Beta)
+author: Erich M. Burg (ErBird)
+
+slider1:0<-12,24,0.1>Input Gain (dB)
+slider2:0<-12,0,0.1>Ceiling (dB)
+slider4:3<0,7,1{x/(1+x),Arctan,x/sqrt(1+x^2),Tanh,Variable Knee (GClip),Sine+x,Sine}>Waveshaper
+slider5:100<0,100,0.01>Knee Softness (%)
+
+in_pin:left input
+in_pin:right input
+out_pin:left output
+out_pin:right output
+
+options:gfx_hz=120;
+
+@init
+
+ext_noinit = 1;
+
+//Constants
+pi = $pi;
+two_pi = 2/pi;
+pi_2 = 0.5*$pi;
+gain = 10^(slider1/20);
+ceiling = 10^(-slider2/20);
+inv_ceiling = 1/ceiling;
+s = 0.01*slider5;
+slider5_old = slider5;
+decay_db = 10; //Meter Decay (dB/sec)
+
+function alg1(x)
+(
+  x/(1+abs(x));
+);
+
+function arctan(x)
+global(two_pi,pi_2)
+(
+  two_pi*atan(pi_2*x);
+);
+
+function alg2(x)
+(
+  x/sqrt(1+x^2);
+);
+
+function tanh(x)
+global(s)
+local(y)
+(
+  2/(1+exp(-2*x))-1;
+);
+
+function sine1(x)
+local(x_abs,x_sign)
+(
+  x_sign = sign(x);
+  x = abs(x);
+  x = min(x,2);
+  x = (sin(pi_2*x)+pi_2*x)/pi;
+  x = x_sign*x;
+);
+
+function sine2(x)
+(
+  sin(max(min(x,pi_2),-pi_2));
+);
+
+function gclip(x)
+global(s)
+local(x_sign,x_abs)
+(
+  x_sign = sign(x);
+  x_abs = abs(x);
+  (1-s) <= x_abs ?
+  (
+    x = (x_abs+s-1)/s;
+    x = 1-(1-min(0.5*x,1))^2;
+    x = x_sign*(s*x+1-s);
+  ); 
+  x;
+);
+
+function saturation(x)
+global(waveshaper, ceiling, inv_ceiling)
+local(x_sign,x_abs)
+(
+  x *= ceiling;
+  waveshaper == 0 ?
+  (
+    x = alg1(x);
+  )
+  :waveshaper == 1 ?
+  (
+    x = arctan(x);
+  )
+  :waveshaper == 2 ?
+  (
+    x = alg2(x);
+  )
+  :waveshaper == 3 ?
+  (
+    x = tanh(x);
+  )
+  :waveshaper == 4 ?
+  (
+    x = gclip(x);
+  )
+  :waveshaper == 5 ?
+  (
+    x = sine1(x);
+  )
+  :waveshaper == 6 ?
+  (
+    x = sine2(x);
+  );
+  x = x*inv_ceiling;
+);
+
+@slider
+
+gain_dB_target = slider1;
+ceiling_dB_target = slider2;
+
+waveshaper = slider4;
+waveshaper !== 4 && waveshaper_old == 4 ?
+(
+  slider5_old = slider5;
+);
+waveshaper !== 4?
+(
+  slider5 = 100;
+);
+waveshaper == 4 && waveshaper_old !== 4 ?
+(
+  slider5 = slider5_old;
+  s = 0.01*(slider5);
+);
+waveshaper_old = waveshaper;
+
+s_target = 0.01*slider5;
+
+@block
+
+d_s = 0.02*(s_target - s)/samplesblock;
+d_gain_dB = 0.02*(gain_dB_target - gain_dB)/samplesblock;
+d_ceiling_dB = 0.02*(ceiling_dB_target - ceiling_dB)/samplesblock;
+decay = 10^(-0.05*decay_db/srate);
+
+@sample
+
+//Parameter Smoothing
+s += d_s;
+gain_dB += d_gain_dB;
+ceiling_dB += d_ceiling_dB;
+
+gain_dB !== gain_dB_old ?
+(
+  gain = 10^(gain_dB/20);
+):
+gain_dB_old = gain_dB;
+
+ceiling_dB !== ceiling_dB_old ?
+(
+  ceiling = 10^(-ceiling_dB/20);
+  inv_ceiling = 1/ceiling;
+):
+ceiling_dB_old = ceiling_dB;
+
+spl0 *= gain;
+spl1 *= gain;
+
+//Input Meter
+in_meter = max(abs(spl0),abs(spl1));
+in_meter < in_meter_old ?
+(
+  in_meter = in_meter_old*decay;
+);
+in_meter_old = in_meter;
+
+spl0 = saturation(spl0);
+spl1 = saturation(spl1);
+
+@gfx 432 102
+
+w = 432;
+h = 100;
+
+gfx_gradrect(0,0,gfx_w,gfx_h,0.7,0.7,0.7,0,0,0,0,0.1/gfx_w,0,0,0,0.1/gfx_h);
+
+//Gridlines
+gfx_set(1,1,1,0.8);
+gfx_line(50,0,50,h);
+gfx_line(99,0,99,h);
+gfx_line(199,0,199,h);
+gfx_line(281,0,281,h);
+gfx_line(398,0,398,h);
+gfx_line(398,0,398,h);
+
+//Draw Transfer Curve
+x = w;
+loop(w,
+  shade = 1-((min(x,100)-h)/h)^4;
+  y = h-h*saturation(x/h)+2;
+  h*in_meter <= x ?
+  (
+    gfx_set(0,shade,0,1);
+  ):(
+    gfx_set(shade,0,0,1);
+  );
+  gfx_circle(x,y,2,1,1);
+  x -= 1;
+);
+
+//dB Markings
+gfx_set(1,1,1,1);
+gfx_x = 32;
+gfx_y = 92;
+gfx_drawstr("-6");
+gfx_x = 89;
+gfx_y = 92;
+gfx_drawstr("0");
+gfx_x = 182;
+gfx_y = 92;
+gfx_drawstr("+6");
+gfx_x = 264;
+gfx_y = 92;
+gfx_drawstr("+9");
+gfx_x = 373;
+gfx_y = 92;
+gfx_drawstr("+12");
+gfx_x = 414;
+gfx_y = 92;
+gfx_drawstr("dB");

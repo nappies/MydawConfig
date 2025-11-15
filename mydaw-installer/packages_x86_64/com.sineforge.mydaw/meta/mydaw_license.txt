@@ -1,0 +1,42 @@
+SOFTWARE LICENSE AGREEMENT for MyDaw Config®
+This is a legal agreement between you (the customer) and SineForge (the company) for the use of the licensed software.
+READ CAREFULLY: By downloading or installing this software, you indicate your full acceptance of these terms. If you do not agree, do not download, install, or use the software.
+
+1. Scope of Use
+1.1 Trial License
+Under a Trial License, you may download and use the Software free of charge for 20 minutes per run. For this Trial Period, SineForge grants you a limited, non-exclusive, and non-transferable license to copy and use the Software for evaluation only. The trial copy is fully functional, but with the following restriction: except when opening third-party DAW projects, you can only load track content, not effects or instruments.
+1.2 Purchased License
+If you wish to use the Software beyond the Trial Period, you must purchase a license for $39 USD per computer. To purchase, visit our website and follow the links.
+Said purchased license shall apply to MyDaw config version 2.5 and any future versions up through and including version 2.99.
+1.3 Use Restrictions
+Our software is protected by law. SineForge retains title and ownership of the software including all intellectual property rights. You will not acquire any rights to the software except as expressly set forth herein.
+You are granted a limited non-exclusive license to use the software on one computer at any given time.
+You must ensure by appropriate and reasonable steps that third parties, including your own employees, cannot make unauthorized use of the software.
+You may not translate, reverse engineer, decompile, disassemble or create derivative works from the software.
+You may not modify, sell, rent, lease, sublicense, transfer, resell for profit, or otherwise distribute the Software.
+You may not remove or obscure any copyright and trademark notices relating to the Software.
+
+2. Warranty and Liability
+SineForge does not warrant that the Software is error free. SineForge offers the Software "as is" and with all faults. SineForge disclaims all warranties, either express or implied, including but not limited to implied warranties of merchantability and fitness for a particular purpose.
+To the maximum extent permitted by applicable law, SineForge shall not be liable for any special, incidental, indirect, or consequential damages whatsoever arising out of or in any way related to the use or inability to use the Software. In any case, SineForge's entire liability shall be limited to the amount paid by you for the Software.
+
+3. No Refund Policy
+Because the Software is provided free of charge during the Trial Period to allow potential customers to evaluate and test it, SineForge enforces a strict no-refund policy. Please evaluate and test the Software carefully during the Trial Period. Once you pay the license fee, your payment is final and may not be reimbursed.
+
+4. Final Provisions
+This Agreement is effective until terminated. This Agreement will terminate automatically if you fail to comply with any term or condition.
+SineForge reserves the right at any time to cease support of the Software and to alter prices, features, specifications, licensing terms, or other characteristics of the Software.
+This EULA is governed by the laws of the State of Georgia, United States of America.
+If any provision hereof shall be held illegal, invalid or unenforceable, such provision shall be modified to the minimum extent necessary to make it legal, valid and enforceable.
+This Agreement contains the entire agreement between SineForge and you related to the software.
+
+5. Third-Party Software Licenses
+This software includes the following third-party libraries:
+
+Cockos WDL - Copyright (C) 2005 and later Cockos Incorporated (zlib-style license)
+pugixml - Copyright (c) 2006-2023 Arseny Kapoulkine (MIT License)
+LunaSVG - Copyright (c) 2020 Nwutobo Samuel Ugochukwu (MIT License)
+
+
+© SineForge
+Last updated: October 11, 2025

@@ -4,7 +4,7 @@
     <Version>2.5</Version>
     <Title>MyDaw Config 2.5 Installer</Title>
     <Publisher>SineForge</Publisher>
-    <ProductUrl>https://github.com/yourusername/mydaw-config</ProductUrl>
+    <ProductUrl>https://sineforge.art/</ProductUrl>
     <StartMenuDir>SineForge</StartMenuDir>
     <TargetDir>@HomeDir@/ReaperMyDaw</TargetDir>
     <AdminTargetDir>@ApplicationsDir@/MyDaw</AdminTargetDir>
@@ -14,8 +14,8 @@
     <StyleSheet>installer.qss</StyleSheet>
     <TitleColor>#FF5733</TitleColor>
     <RunProgram>@TargetDir@/reaper</RunProgram>
+	<RunProgramDescription>Launch REAPER</RunProgramDescription>
 	<ControlScript>controller.qs</ControlScript>
-    <RunProgramDescription>Launch REAPER</RunProgramDescription>
 	<SupportsModify>false</SupportsModify>
 	<MaintenanceToolName>Uninstall</MaintenanceToolName>
 </Installer>

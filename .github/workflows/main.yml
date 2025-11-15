@@ -1,36 +1,58 @@
-name: Build macOS Arm Installer
+name: Build macOS Installer
 on: release
 jobs:
   build-installer:
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-    
-    - name: Install Qt IFW
-      run: |
-        pip install aqtinstall
-        aqt install-tool mac desktop tools_ifw
-    
-        - name: Add IFW to PATH
-         run: echo "$GITHUB_WORKSPACE/Tools/QtInstallerFramework/4.7/bin" >> $GITHUB_PATH
+      - uses: actions/checkout@v3
       
-        - name: Build Installer
+      - name: Install Qt Installer Framework
+        uses: jmarrec/setup-qtifw@v1
+        with:
+          qtifw-version: '4.6.1'
+      
+      - name: Build Installer
         run: |
-          binarycreator --offline-only -p mydaw-installer/packages_mac -c mydaw-installer/config/config.xml MyDaw-Macos-Arm64.app
-       
-        - name: Prepare for upload
-         run: |
+          binarycreator --offline-only -p mydaw-installer/packages_arm64 -c mydaw-installer/config/config.xml MyDaw-Macos-Arm64.app
+      
+      - name: Code Sign Application (Ad-hoc)
+        run: |
+          # Find and sign all executables, dylibs, and frameworks recursively
+          echo "Starting code signing process..."
+          
+          # Sign all executables
+          find MyDaw-Macos-Arm64.app -type f -perm +111 -exec sh -c '
+            file "$1" | grep -q "Mach-O" && codesign --force --deep --sign - "$1" && echo "Signed: $1"
+          ' sh {} \;
+          
+          # Sign all dylibs
+          find MyDaw-Macos-Arm64.app -name "*.dylib" -exec sh -c '
+            codesign --force --deep --sign - "$1" && echo "Signed: $1"
+          ' sh {} \;
+          
+          # Sign all frameworks
+          find MyDaw-Macos-Arm64.app -name "*.framework" -exec sh -c '
+            codesign --force --deep --sign - "$1" && echo "Signed: $1"
+          ' sh {} \;
+          
+          # Finally, sign the entire app bundle
+          codesign --force --deep --sign - MyDaw-Macos-Arm64.app
+          
+          echo "Code signing completed!"
+          
+      - name: Verify Code Signature
+        run: |
+          echo "Verifying code signature..."
+          codesign --verify --deep --strict --verbose=2 MyDaw-Macos-Arm64.app
+          spctl --assess --verbose=4 MyDaw-Macos-Arm64.app || echo "Note: Ad-hoc signature will require user approval in System Preferences"
+      
+      - name: Prepare for upload
+        run: |
           mkdir -p upload
           mv MyDaw-Macos-Arm64.app upload/
-       
-        - name: Upload Installer Artifact
-         uses: actions/upload-artifact@v4
-         with:
+      
+      - name: Upload Installer Artifact
+        uses: actions/upload-artifact@v4
+        with:
           name: MyDaw-Macos-Arm64
           path: upload/

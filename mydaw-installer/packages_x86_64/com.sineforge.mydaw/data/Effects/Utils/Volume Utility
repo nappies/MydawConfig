@@ -1,0 +1,140 @@
+desc:Volume Utility
+slider1:0<0,3,1{Stereo,Left,Right,Swap}>Input
+slider2:100<0,200,1>Width (%)
+slider3:0<100,-100,1>Mid/Side(%)
+slider4:0<0,1,1{Normal,Invert}>Left Phase
+slider5:0<0,1,1{Normal,Invert}>Right Phase
+slider6:0<0,1,1{Off,On}>DC Offset
+slider7:0<-60,60,0.1>Coarse Gain (dB)
+slider8:0<-10,10,0.1>Fine Gain (dB)
+slider9:0<-100,100,0.1>Panorama
+slider10:0<0,1,1{Off,On (!!!)}>Mute
+in_pin:left input
+in_pin:right input
+out_pin:left output
+out_pin:right output
+
+@init
+AMP_dB_i=1/8.68588963806504;
+db=slider8+slider7; // initialize here but not in @slider for playback start
+pan=0.01*slider9;
+mute=slider10;
+
+@slider
+//Pan
+panlaw=exp(0*AMP_DB_i);
+pancomp=(panlaw > 1.0 ? 1.0/panlaw : panlaw);
+dpan=0.0;
+//Vol
+ddb=0.0;
+l_v=1;
+r_v=1;
+width = slider2 / 200;
+center = min(slider3/100+1,1);
+side = (1-slider3/100);
+slider4?(l_v=-l_v);
+slider5?(r_v=-r_v);
+//Mute
+mute=slider10;
+
+@block
+cnt=0;
+ddb=0.0;
+dpan=0.0;
+db_chg_splpos=slider_next_chg(8, tgtdb);
+db_chg_splpos > 0 ? 
+(
+  db=slider8+slider7;
+) : (
+  tgtdb = slider8+slider7;
+  db_chg_splpos = samplesblock;
+);
+ddb=(tgtdb-db)/db_chg_splpos;
+pan_chg_splpos=slider_next_chg(9, tgtpan);
+pan_chg_splpos > 0 ? 
+(
+  pan=0.01*slider9;
+) : (
+  tgtpan = slider9;
+  pan_chg_splpos = samplesblock;
+);
+dpan=(tgtpan*0.01-pan)/pan_chg_splpos;
+
+@sample
+// Mute check - if muted, output silence
+mute ? (
+  spl0 = 0;
+  spl1 = 0;
+) : (
+  // Volume
+  cnt == db_chg_splpos ? 
+  (
+    ddb=0.0;
+    db_chg_splpos=slider_next_chg(8, tgtdb);
+    db_chg_splpos > cnt ? 
+    (
+      ddb=(tgtdb-db)/(db_chg_splpos-cnt);
+    );
+  );
+  adj=exp(db*AMP_DB_i);
+  cnt == pan_chg_splpos ? 
+  (
+    dpan=0.0;
+    pan_chg_splpos=slider_next_chg(9, tgtpan);
+    pan_chg_splpos > cnt ? 
+    (
+      dpan=(tgtpan*0.01-pan)/(pan_chg_splpos-cnt);
+    );
+  );
+  panlaw != 1.0 ? 
+  (
+    panlaw > 1.0 ? adj *= panlaw;
+    panatt = abs(pan);
+    adj *= pancomp+(1.0-pancomp)*(2.0/(2.0-panatt)-1.0);
+  );
+  adj0=adj1=adj;
+  pan < 0.0 ? adj1 *= 1.0+pan;
+  pan > 0.0 ? adj0 *= 1.0-pan;
+  //Stereo
+  slider1==0 ?
+  (
+  l_in=spl0;
+  r_in=spl1;
+  );
+  //Left
+  slider1==1 ?
+  (
+  l_in=spl0;
+  r_in=spl0;
+  );
+  //Right
+  slider1==2 ?
+  (
+  l_in=spl1;
+  r_in=spl1;
+  );
+  //Swap
+  slider1==3 ?
+  (
+  l_in=spl1;
+  r_in=spl0;
+  );
+  // 3 Way Balancer + Enhancer
+  mono = (l_in + r_in)/2 * center;
+  stereo = (l_in - r_in) * side;
+  l_w = ((mono + (stereo*1 - stereo*0 )* width) / max(width,1)*adj0);
+  r_w = ((mono + (-stereo*1 + stereo*-0 )* width) / max(width,1)*adj1);
+  //Offset
+  slider6==1 ?
+  (
+  otm1=0.999*otm1 + l_w - itm1; itm1=l_w; l_w=otm1;
+  otm2=0.999*otm2 + r_w - itm2; itm2=r_w; r_w=otm2;
+  );
+  //Phase Invert
+  spl0=l_w*l_v;
+  spl1=r_w*r_v;
+);
+
+db += ddb;
+pan += dpan;
+cnt += 1;
