@@ -1,8 +1,12 @@
 name: Build macOS Installer
-on: release
+
+on:
+  release
+
 jobs:
   build-installer:
     runs-on: macos-14
+    
     steps:
       - uses: actions/checkout@v3
       
@@ -15,36 +19,33 @@ jobs:
         run: |
           binarycreator --offline-only -p mydaw-installer/packages_arm64 -c mydaw-installer/config/config.xml MyDaw-Macos-Arm64.app
       
-      - name: Code Sign Application (Ad-hoc)
+      - name: Code Sign App Bundle (Recursive)
         run: |
-          # Find and sign all executables, dylibs, and frameworks recursively
-          echo "Starting code signing process..."
+          echo "Signing MyDaw-Macos-Arm64.app recursively with ad-hoc signature..."
           
-          # Sign all executables
-          find MyDaw-Macos-Arm64.app -type f -perm +111 -exec sh -c '
-            file "$1" | grep -q "Mach-O" && codesign --force --deep --sign - "$1" && echo "Signed: $1"
-          ' sh {} \;
+          # Sign all nested frameworks, dylibs, and binaries first (inside-out approach)
+          find MyDaw-Macos-Arm64.app -type f \( -name "*.dylib" -o -name "*.framework" -o -perm +111 \) -print0 | while IFS= read -r -d '' file; do
+            if file "$file" | grep -q "Mach-O"; then
+              echo "Signing: $file"
+              codesign --force --sign - "$file" 2>/dev/null || true
+            fi
+          done
           
-          # Sign all dylibs
-          find MyDaw-Macos-Arm64.app -name "*.dylib" -exec sh -c '
-            codesign --force --deep --sign - "$1" && echo "Signed: $1"
-          ' sh {} \;
+          # Sign all nested .app bundles
+          find MyDaw-Macos-Arm64.app -mindepth 2 -name "*.app" -print0 | while IFS= read -r -d '' bundle; do
+            echo "Signing bundle: $bundle"
+            codesign --force --deep --sign - "$bundle" || true
+          done
           
-          # Sign all frameworks
-          find MyDaw-Macos-Arm64.app -name "*.framework" -exec sh -c '
-            codesign --force --deep --sign - "$1" && echo "Signed: $1"
-          ' sh {} \;
-          
-          # Finally, sign the entire app bundle
+          # Finally, sign the main app bundle with deep signing
+          echo "Signing main application bundle..."
           codesign --force --deep --sign - MyDaw-Macos-Arm64.app
           
-          echo "Code signing completed!"
-          
-      - name: Verify Code Signature
-        run: |
-          echo "Verifying code signature..."
+          # Verify the signature
+          echo "Verifying signature..."
           codesign --verify --deep --strict --verbose=2 MyDaw-Macos-Arm64.app
-          spctl --assess --verbose=4 MyDaw-Macos-Arm64.app || echo "Note: Ad-hoc signature will require user approval in System Preferences"
+          
+          echo "Code signing completed successfully!"
       
       - name: Prepare for upload
         run: |
