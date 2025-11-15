@@ -2,7 +2,6 @@ QWidget {
     background-color: #a8a8a8;
     color: black;
 }
-
 QPushButton {
     background: #55def7;
     border-color: rgb(60, 60, 60);
@@ -12,13 +11,13 @@ QPushButton {
     min-height: 20px;
     max-height: 20px;
     min-width: 68px;
-    max-width: 68px;
-    padding-left: 8px;
-    padding-right: 8px;
+    max-width: 75px;
+    padding-left: 5px;
+    padding-right: 5px;
 }
+
 
 QPushButton:hover {
     background-color: #55d3f7;
 }
-
 
