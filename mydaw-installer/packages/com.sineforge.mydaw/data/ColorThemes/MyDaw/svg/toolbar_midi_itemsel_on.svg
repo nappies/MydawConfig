@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 24.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 90 30" style="enable-background:new 0 0 90 30;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#B5B5B5;}
+	.st1{fill:#A1A1A1;}
+	.st2{fill:#D7D7D7;}
+	.st3{clip-path:url(#SVGID_2_);}
+	.st4{opacity:0.6;}
+	.st5{clip-path:url(#SVGID_4_);}
+	.st6{clip-path:url(#SVGID_6_);}
+</style>
+<g>
+	<rect y="3" class="st0" width="30" height="24"/>
+	<rect x="30" y="3" class="st1" width="30" height="24"/>
+	<rect x="60" y="3" class="st2" width="30" height="24"/>
+</g>
+<g>
+	<rect y="3" class="st2" width="30" height="24"/>
+	<rect x="30" y="3" class="st2" width="30" height="24"/>
+	<rect x="60" y="3" class="st2" width="30" height="24"/>
+</g>
+<g>
+	<g>
+		<defs>
+			<rect id="SVGID_1_" width="30" height="30"/>
+		</defs>
+		<clipPath id="SVGID_2_">
+			<use xlink:href="#SVGID_1_"  style="overflow:visible;"/>
+		</clipPath>
+		<path class="st3" d="M25.6,10.5h-12V9h12V10.5z M26.6,8h-14v3.5h14V8z"/>
+		<rect x="10.2" y="13.3" class="st3" width="14" height="3.5"/>
+		<path class="st3" d="M18.8,21h-12v-1.5h12V21z M19.8,18.5h-14V22h14V18.5z"/>
+	</g>
+</g>
+<g class="st4">
+	<g>
+		<defs>
+			<rect id="SVGID_3_" x="30" width="30" height="30"/>
+		</defs>
+		<clipPath id="SVGID_4_">
+			<use xlink:href="#SVGID_3_"  style="overflow:visible;"/>
+		</clipPath>
+		<path class="st5" d="M55.6,10.5h-12V9h12V10.5z M56.6,8h-14v3.5h14V8z"/>
+		<rect x="40.2" y="13.3" class="st5" width="14" height="3.5"/>
+		<path class="st5" d="M48.8,21h-12v-1.5h12V21z M49.8,18.5h-14V22h14V18.5z"/>
+	</g>
+</g>
+<g>
+	<g>
+		<defs>
+			<rect id="SVGID_5_" x="60" width="30" height="30"/>
+		</defs>
+		<clipPath id="SVGID_6_">
+			<use xlink:href="#SVGID_5_"  style="overflow:visible;"/>
+		</clipPath>
+		<path class="st6" d="M85.6,10.5h-12V9h12V10.5z M86.6,8h-14v3.5h14V8z"/>
+		<rect x="70.2" y="13.3" class="st6" width="14" height="3.5"/>
+		<path class="st6" d="M78.8,21h-12v-1.5h12V21z M79.8,18.5h-14V22h14V18.5z"/>
+	</g>
+</g>
+</svg>

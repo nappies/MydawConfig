@@ -1,0 +1,8 @@
+desc:PreFx
+
+
+slider1:50<0, 100, 1>LowLim
+slider3:50<0, 100, 1>HiLim
+slider5:50<0, 100, 1>PitchPedal
+slider7:50<0, 100, 1>WahBypass
+slider9:50<0, 100, 1>WahPedal

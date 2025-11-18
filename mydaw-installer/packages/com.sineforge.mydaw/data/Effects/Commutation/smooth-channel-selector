@@ -1,0 +1,69 @@
+desc:Smooth Channel Selector
+
+slider1:target_channel_combo=0<0,7,1{1 + 2,3 + 4,5 + 6,7 + 8,9 + 10,11 + 12,13 + 14,15 + 16}>Channels
+slider2:fade_ms=10<1,100>Fade (ms)
+
+out_pin:Left
+out_pin:Right
+
+@init
+
+function update_target_channel() (
+	// For now the only options are adjacent pairs, but more could be added later
+	target_channel_combo < 8 ? (
+		channel_target0 = target_channel_combo*2;
+		channel_target1 = target_channel_combo*2 + 1;
+	);
+);
+
+function update_fade_channel() (
+	channel_fade_from0 = channel_fade_to0;
+	channel_fade_from1 = channel_fade_to1;
+	channel_fade_to0 = channel_target0;
+	channel_fade_to1 = channel_target1;
+	
+	channel_fade_from0 != channel_fade_to0 || channel_fade_from1 != channel_fade_to1 ? (
+		fade_ratio = 1;
+	) : (
+		fade_ratio = 0;
+	)
+);
+
+update_target_channel();
+
+// Reset to stable state - calling this twice should do it.
+update_fade_channel();
+update_fade_channel();
+
+@slider
+
+fade_samples = srate*fade_ms*0.001;
+fade_step = -1/fade_samples;
+
+update_target_channel();
+// If we're not mid-fade, check whether we should be fading
+fade_ratio <= 0 ? (
+	update_fade_channel();
+);
+
+@sample
+
+function fade_sample(from, to) (
+	spl(to) + (spl(from) - spl(to))*fade_ratio;
+);
+
+fade_ratio ? (
+	// We're mid-fade
+	spl0 = fade_sample(channel_fade_from0, channel_fade_to0);
+	spl1 = fade_sample(channel_fade_from1, channel_fade_to1);
+	
+	// Progress the fade
+	fade_ratio += fade_step;
+	fade_ratio <= 0 ? (
+		update_fade_channel();
+	);
+) : (
+	// Just output the appropriate channels
+	spl0 = spl(channel_target0);
+	spl1 = spl(channel_target1);
+);

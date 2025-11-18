@@ -1,0 +1,200 @@
+desc:Ze Big Chorus
+/*
+  T.Rochebois 08/2015
+  Up to 32 taps (x 2 stereo)
+  Variable delays + fixed all pass to avoid complete phase cancellation
+    => smoother
+  6 LFOs per tap
+*/
+
+slider1:sl_nbTaps=8<1,32,1>Nb of Taps
+
+slider11:sl_MeanDepth=15<1,100>Mean Depth (ms)
+slider12:sl_MeanRate=0.05<0,0.2>Mean Rate
+slider14:sl_NegTaps=30<0,100>Neg. Taps(%)
+slider15:sl_Gain=0<-36,24>Out Gain (dB)
+slider16:sl_DryWet=1<0,1>Dry/Wet
+
+//____________________________________________________________________
+@init
+//____________________________________________________________________
+//                          Inits a bank of nb all pass reverberators
+function APB_init(nb)(
+  this.nb = nb;             // nb of allpass reverberators
+  this.i = ad; ad += nb;    // delay indexes
+  this.d = ad; ad += nb;    // delay lengths
+  this.g = ad; ad += nb;    // feedback coefs
+  this.u = ad; ad += nb;    // delay lines
+);
+//____________________________________________________________________
+//                                Inits allpass number n with delay d
+function APB_init(n d g)(
+  d = max(1, d|0);
+  this.i[n] = 0;            // delay index
+  this.d[n] = d;            // delay length
+  this.g[n] = g;            // feedback
+  this.u[n] = ad; ad += d;  // delay line
+);
+//____________________________________________________________________
+//                                 Audio process for allpass number n
+function APB_aProc(n x)
+instance(i d g u)
+local(u0 uz) (
+  i[n] += 1; i[n] %= d[n];  // index increment and modulo
+  uz = u[n][i[n]];          // delayed value from delay line u[n]
+  u0 = x - g[n] * uz;       // delay line input with feedback
+  u[n][i[n]] = u0;
+  uz + g[n] * u0;           // output with feedforward
+);
+//____________________________________________________________________
+// init function for a chorus line including six LFOs per tap.
+function init() 
+instance(p1 p2 p3 dp1 dp2 dp3 t dt gain depth)
+local(c)(
+  // delay tables                  delta delay tables (optimisation)
+  t =   ad; ad += LMAX;            dt = ad; ad += LMAX;
+  // For each tap : 6 lfos, gain, depth
+  // lfos    phase                 delta phase
+  p1 =     ad; ad += NBTAPS;       dp1 = ad; ad += NBTAPS;
+  p2 =     ad; ad += NBTAPS;       dp2 = ad; ad += NBTAPS;
+  p3 =     ad; ad += NBTAPS;       dp3 = ad; ad += NBTAPS;
+  p4 =     ad; ad += NBTAPS;       dp4 = ad; ad += NBTAPS;
+  p5 =     ad; ad += NBTAPS;       dp5 = ad; ad += NBTAPS;
+  p6 =     ad; ad += NBTAPS;       dp6 = ad; ad += NBTAPS;
+  gain =   ad; ad += NBTAPS;
+  depth =  ad; ad += NBTAPS;
+  delay =  ad; ad += NBTAPS;
+  fdelay =  ad; ad += NBTAPS;
+  ddelay =  ad; ad += NBTAPS;
+  
+// _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+  c = 0;
+  loop(NBTAPS,
+    p1[c] = rand(4); dp1[c] = 1 * (0.75 + 0.5 * rand(1)) * 4 / srate; 
+    p2[c] = rand(4); dp2[c] = 2 * (0.50 + 1.0 * rand(1)) * 4 / srate;
+    p3[c] = rand(4); dp3[c] = 3 * (0.75 + 0.5 * rand(1)) * 4 / srate; 
+    p4[c] = rand(4); dp4[c] = 5 * (0.75 + 0.5 * rand(1)) * 4 / srate; 
+    p5[c] = rand(4); dp5[c] = 7 * (0.50 + 1.0 * rand(1)) * 4 / srate; 
+    p6[c] = rand(4); dp6[c] = 11 * (0.5 + 1.0 * rand(1)) * 4 / srate; 
+    gain[c] = sqrt(0.1 + 0.9 * rand(1));  // [0.31 1]
+    depth[c] = (1) * (0.75 + 0.5 * rand(1));
+    c += 1;
+  );
+// _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+  this.apb.APB_init(NBTAPS);
+  c = 0;
+  loop(this.apb.nb,
+    this.apb.APB_init(c, 7 + (((srate/200)*rand(1))|0), 0.7);
+    c += 1;
+  );
+);
+//____________________________________________________________________
+
+LMAX = (srate * 0.2)|0;
+NBTAPS = 32;
+KRATE = 32;
+_KRATE = 1 / KRATE;
+lp_coef = 0.02 * 44100 / srate;  // todo freq formula + slider
+left.init();
+right.init();
+//____________________________________________________________________
+@slider
+function slide(negTaps)
+local(c)(
+  this.aNegTaps != negTaps ? (
+    c = 0;
+    loop(NBTAPS,
+      this.gain[c] = sqrt(0.1 + 0.9 * rand(1));  // [0.31 1]
+      rand(100) < negTaps ? this.gain[c] = -this.gain[c]; // [-1 -0.31] U [1, 0.31]
+      c += 1;
+      this.aNegTaps = negTaps;
+    );
+  );
+);
+meanDepth = sl_MeanDepth * srate / 1000;
+//____________________________________________________________________
+sl_nbTaps = min(NBTAPS, max(1, sl_nbTaps)) | 0;
+left.coef = (2 ^ ( sl_lGain * (1/6) )) / sqrt(sl_nbTaps);
+right.coef = (2 ^ ( sl_rGain * (1/6) )) / sqrt(sl_nbTaps);
+left.slide(sl_NegTaps); right.slide(sl_NegTaps);
+//____________________________________________________________________
+@sample
+function interp(x)
+local(x0 a)(
+  x = this.i - x + LMAX;   x0 = x | 0;  a = x - x0;  x0 %= LMAX;
+  this.t[x0] + a * this.dt[x0];
+);
+// _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+function ssat(p)( p = min(1, max(-1, p));  p * (1.5 - 0.5 * p * p); );
+// _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+// p -1 3
+function fsin(p)( p > 1 ? p = 2 - p;  p * (1.5 - 0.5 * p * p); );
+// _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+function sample(meanRate dryWet) 
+instance(spl lp i in_1 t dt ac in_0 p1 p2 p3 dp1 dp2 dp3 gain depth coef) 
+local(c out)(
+// _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+//                                       No chorus on low frequencies
+  lp += lp_coef * (spl - lp);
+  lp == 0 ? lp = 0;
+  in_1 = spl - lp; 
+// _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+//                                                   Inputs to tables
+  i += 1; i %= LMAX;
+  t[i] = in_0;    dt[i] = in_1 - in_0;    in_0 = in_1;
+// _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+  k += 1;
+  k >= KRATE ? (
+    k = 0;
+    c = 0;
+    loop(sl_nbTaps,
+      p1[c] += KRATE * meanRate * dp1[c];   p1[c] > 3 ? p1[c] -= 4;  // LFO1
+      p2[c] += KRATE * meanRate * dp2[c];   p2[c] > 3 ? p2[c] -= 4;  // LFO2
+      p3[c] += KRATE * meanRate * dp3[c];   p3[c] > 3 ? p3[c] -= 4;  // LFO3
+      p4[c] += KRATE * meanRate * dp4[c];   p4[c] > 3 ? p4[c] -= 4;  // LFO4
+      p5[c] += KRATE * meanRate * dp5[c];   p5[c] > 3 ? p5[c] -= 4;  // LFO5
+      p6[c] += KRATE * meanRate * dp6[c];   p6[c] > 3 ? p6[c] -= 4;  // LFO6
+      new_delay =  meanDepth * depth[c] 
+           * (1.0 
+            + 0.4 * fsin(p1[c])
+            + 0.2 * fsin(p2[c]) 
+            + 0.1 * fsin(p3[c])
+            + 0.05 * fsin(p4[c])
+            + 0.025 * fsin(p5[c])
+            + 0.012 * fsin(p6[c])
+             );
+      ddelay[c] = (new_delay - delay[c]) * _KRATE;
+      c += 1;     
+    );
+  );
+
+//                                                output accumulators
+  ac = 0;
+  c = 0;
+  loop(sl_nbTaps,
+    
+    delay[c] += ddelay[c];      
+    fdelay[c] += 0.001 * (delay[c] - fdelay[c]);      
+         
+    // series allpass
+    ac += gain[c] * 
+      this.interp(fdelay[c]);
+
+    ac = this.apb.APB_aProc(c, ac);
+
+    c += 1;
+  );
+// _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+  out = (2/3) * ssat(lp) + ac * coef;
+  spl += dryWet * (out - spl);
+);
+//____________________________________________________________________
+left.spl  = spl0; 
+right.spl = spl1;
+// _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+  left.sample(sl_MeanRate, sl_DryWet);
+  right.sample(sl_MeanRate,  sl_DryWet);
+// _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+spl0 = left.spl;
+spl1 = right.spl;

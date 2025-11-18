@@ -1,0 +1,1521 @@
+// (C) 2013, Vladimir V. Belov
+// This effect Copyright (C) 2004 and later Cockos Incorporated
+// License: GPL - http://www.gnu.org/licenses/gpl.html
+desc: ReaSpect V1.05
+
+slider1:1<0,1,1>-PeakStatus
+slider2:0<0,1,1>-ShiftStatus
+
+@init
+
+ext_noinit=1;
+function a2d(x)
+     (
+       20*log10(x)
+     );
+        
+function d2a(x)
+     (
+       pow(10,x/20)
+     );
+   
+//c=300*srate/1000;
+X0=25;
+Y0=0;
+
+@slider
+PeakStatus=slider1;
+ShiftStatus=slider2;
+
+// Polosa - Freq
+F_1=25;
+F_2=31.5;
+F_3=40;
+F_4=50;
+F_5=63;
+F_6=80;
+F_7=100;
+F_8=125;
+F_9=160;
+F_10=200;
+F_11=250;
+F_12=315;
+F_13=400;
+F_14=500;
+F_15=630;
+F_16=800;
+F_17=1000;
+F_18=1250;
+F_19=1600;
+F_20=2000;
+F_21=2500;
+F_22=3150;
+F_23=4000;
+F_24=5000;
+F_25=6300;
+F_26=8000;
+F_27=10000;
+F_28=12500;
+F_29=16000;
+F_30=20000;
+
+
+Width=0.14;
+dampening=Width*0.999 + 0.001;
+
+@slider
+// Calculate Filtr coef
+
+c_1 = ( 1 / tan( $pi*F_1 / srate ) );
+a2_1 = 1 + c_1*(c_1+dampening);
+fa1_1 = 2 * (1 - c_1*c_1) / a2_1;
+fa0_1 = (1 + c_1*(c_1-dampening)) / a2_1;
+fk_1 = c_1*dampening / a2_1;
+
+c_2 = ( 1 / tan( $pi*F_2 / srate ) );
+a2_2 = 1 + c_2*(c_2+dampening);
+fa1_2 = 2 * (1 - c_2*c_2) / a2_2;
+fa0_2 = (1 + c_2*(c_2-dampening)) / a2_2;
+fk_2 = c_2*dampening / a2_2;
+
+c_3 = ( 1 / tan( $pi*F_3 / srate ) );
+a2_3 = 1 + c_3*(c_3+dampening);
+fa1_3 = 2 * (1 - c_3*c_3) / a2_3;
+fa0_3 = (1 + c_3*(c_3-dampening)) / a2_3;
+fk_3 = c_3*dampening / a2_3;
+
+c_4 = ( 1 / tan( $pi*F_4 / srate ) );
+a2_4 = 1 + c_4*(c_4+dampening);
+fa1_4 = 2 * (1 - c_4*c_4) / a2_4;
+fa0_4 = (1 + c_4*(c_4-dampening)) / a2_4;
+fk_4 = c_4*dampening / a2_4;
+
+c_5 = ( 1 / tan( $pi*F_5 / srate ) );
+a2_5 = 1 + c_5*(c_5+dampening);
+fa1_5 = 2 * (1 - c_5*c_5) / a2_5;
+fa0_5 = (1 + c_5*(c_5-dampening)) / a2_5;
+fk_5 = c_5*dampening / a2_5;
+
+c_6 = ( 1 / tan( $pi*F_6 / srate ) );
+a2_6 = 1 + c_6*(c_6+dampening);
+fa1_6 = 2 * (1 - c_6*c_6) / a2_6;
+fa0_6 = (1 + c_6*(c_6-dampening)) / a2_6;
+fk_6 = c_6*dampening / a2_6;
+
+c_7 = ( 1 / tan( $pi*F_7 / srate ) );
+a2_7 = 1 + c_7*(c_7+dampening);
+fa1_7 = 2 * (1 - c_7*c_7) / a2_7;
+fa0_7 = (1 + c_7*(c_7-dampening)) / a2_7;
+fk_7 = c_7*dampening / a2_7;
+
+c_8 = ( 1 / tan( $pi*F_8 / srate ) );
+a2_8 = 1 + c_8*(c_8+dampening);
+fa1_8 = 2 * (1 - c_8*c_8) / a2_8;
+fa0_8 = (1 + c_8*(c_8-dampening)) / a2_8;
+fk_8 = c_8*dampening / a2_8;
+
+c_9 = ( 1 / tan( $pi*F_9 / srate ) );
+a2_9 = 1 + c_9*(c_9+dampening);
+fa1_9 = 2 * (1 - c_9*c_9) / a2_9;
+fa0_9 = (1 + c_9*(c_9-dampening)) / a2_9;
+fk_9 = c_9*dampening / a2_9;
+
+c_10 = ( 1 / tan( $pi*F_10 / srate ) );
+a2_10 = 1 + c_10*(c_10+dampening);
+fa1_10 = 2 * (1 - c_10*c_10) / a2_10;
+fa0_10 = (1 + c_10*(c_10-dampening)) / a2_10;
+fk_10 = c_10*dampening / a2_10;
+
+c_11 = ( 1 / tan( $pi*F_11 / srate ) );
+a2_11 = 1 + c_11*(c_11+dampening);
+fa1_11 = 2 * (1 - c_11*c_11) / a2_11;
+fa0_11 = (1 + c_11*(c_11-dampening)) / a2_11;
+fk_11 = c_11*dampening / a2_11;
+
+c_12 = ( 1 / tan( $pi*F_12 / srate ) );
+a2_12 = 1 + c_12*(c_12+dampening);
+fa1_12 = 2 * (1 - c_12*c_12) / a2_12;
+fa0_12 = (1 + c_12*(c_12-dampening)) / a2_12;
+fk_12 = c_12*dampening / a2_12;
+
+c_13 = ( 1 / tan( $pi*F_13 / srate ) );
+a2_13 = 1 + c_13*(c_13+dampening);
+fa1_13 = 2 * (1 - c_13*c_13) / a2_13;
+fa0_13 = (1 + c_13*(c_13-dampening)) / a2_13;
+fk_13 = c_13*dampening / a2_13;
+
+c_14 = ( 1 / tan( $pi*F_14 / srate ) );
+a2_14 = 1 + c_14*(c_14+dampening);
+fa1_14 = 2 * (1 - c_14*c_14) / a2_14;
+fa0_14 = (1 + c_14*(c_14-dampening)) / a2_14;
+fk_14 = c_14*dampening / a2_14;
+
+c_15 = ( 1 / tan( $pi*F_15 / srate ) );
+a2_15 = 1 + c_15*(c_15+dampening);
+fa1_15 = 2 * (1 - c_15*c_15) / a2_15;
+fa0_15 = (1 + c_15*(c_15-dampening)) / a2_15;
+fk_15 = c_15*dampening / a2_15;
+
+c_16 = ( 1 / tan( $pi*F_16 / srate ) );
+a2_16 = 1 + c_16*(c_16+dampening);
+fa1_16 = 2 * (1 - c_16*c_16) / a2_16;
+fa0_16 = (1 + c_16*(c_16-dampening)) / a2_16;
+fk_16 = c_16*dampening / a2_16;
+
+c_17 = ( 1 / tan( $pi*F_17 / srate ) );
+a2_17 = 1 + c_17*(c_17+dampening);
+fa1_17 = 2 * (1 - c_17*c_17) / a2_17;
+fa0_17 = (1 + c_17*(c_17-dampening)) / a2_17;
+fk_17 = c_17*dampening / a2_17;
+
+c_18 = ( 1 / tan( $pi*F_18 / srate ) );
+a2_18 = 1 + c_18*(c_18+dampening);
+fa1_18 = 2 * (1 - c_18*c_18) / a2_18;
+fa0_18 = (1 + c_18*(c_18-dampening)) / a2_18;
+fk_18 = c_18*dampening / a2_18;
+
+c_19 = ( 1 / tan( $pi*F_19 / srate ) );
+a2_19 = 1 + c_19*(c_19+dampening);
+fa1_19 = 2 * (1 - c_19*c_19) / a2_19;
+fa0_19 = (1 + c_19*(c_19-dampening)) / a2_19;
+fk_19 = c_19*dampening / a2_19;
+
+c_20 = ( 1 / tan( $pi*F_20 / srate ) );
+a2_20 = 1 + c_20*(c_20+dampening);
+fa1_20 = 2 * (1 - c_20*c_20) / a2_20;
+fa0_20 = (1 + c_20*(c_20-dampening)) / a2_20;
+fk_20 = c_20*dampening / a2_20;
+
+c_21 = ( 1 / tan( $pi*F_21 / srate ) );
+a2_21 = 1 + c_21*(c_21+dampening);
+fa1_21 = 2 * (1 - c_21*c_21) / a2_21;
+fa0_21 = (1 + c_21*(c_21-dampening)) / a2_21;
+fk_21 = c_21*dampening / a2_21;
+
+c_22 = ( 1 / tan( $pi*F_22 / srate ) );
+a2_22 = 1 + c_22*(c_22+dampening);
+fa1_22 = 2 * (1 - c_22*c_22) / a2_22;
+fa0_22 = (1 + c_22*(c_22-dampening)) / a2_22;
+fk_22 = c_22*dampening / a2_22;
+
+c_23 = ( 1 / tan( $pi*F_23 / srate ) );
+a2_23 = 1 + c_23*(c_23+dampening);
+fa1_23 = 2 * (1 - c_23*c_23) / a2_23;
+fa0_23 = (1 + c_23*(c_23-dampening)) / a2_23;
+fk_23 = c_23*dampening / a2_23;
+
+c_24 = ( 1 / tan( $pi*F_24 / srate ) );
+a2_24 = 1 + c_24*(c_24+dampening);
+fa1_24 = 2 * (1 - c_24*c_24) / a2_24;
+fa0_24 = (1 + c_24*(c_24-dampening)) / a2_24;
+fk_24 = c_24*dampening / a2_24;
+
+c_25 = ( 1 / tan( $pi*F_25 / srate ) );
+a2_25 = 1 + c_25*(c_25+dampening);
+fa1_25 = 2 * (1 - c_25*c_25) / a2_25;
+fa0_25 = (1 + c_25*(c_25-dampening)) / a2_25;
+fk_25 = c_25*dampening / a2_25;
+
+c_26 = ( 1 / tan( $pi*F_26 / srate ) );
+a2_26 = 1 + c_26*(c_26+dampening);
+fa1_26 = 2 * (1 - c_26*c_26) / a2_26;
+fa0_26 = (1 + c_26*(c_26-dampening)) / a2_26;
+fk_26 = c_26*dampening / a2_26;
+
+c_27 = ( 1 / tan( $pi*F_27 / srate ) );
+a2_27 = 1 + c_27*(c_27+dampening);
+fa1_27 = 2 * (1 - c_27*c_27) / a2_27;
+fa0_27 = (1 + c_27*(c_27-dampening)) / a2_27;
+fk_27 = c_27*dampening / a2_27;
+
+c_28 = ( 1 / tan( $pi*F_28 / srate ) );
+a2_28 = 1 + c_28*(c_28+dampening);
+fa1_28 = 2 * (1 - c_28*c_28) / a2_28;
+fa0_28 = (1 + c_28*(c_28-dampening)) / a2_28;
+fk_28 = c_28*dampening / a2_28;
+
+c_29 = ( 1 / tan( $pi*F_29 / srate ) );
+a2_29 = 1 + c_29*(c_29+dampening);
+fa1_29 = 2 * (1 - c_29*c_29) / a2_29;
+fa0_29 = (1 + c_29*(c_29-dampening)) / a2_29;
+fk_29 = c_29*dampening / a2_29;
+
+c_30 = ( 1 / tan( $pi*F_30 / srate ) );
+a2_30 = 1 + c_30*(c_30+dampening);
+fa1_30 = 2 * (1 - c_30*c_30) / a2_30;
+fa0_30 = (1 + c_30*(c_30-dampening)) / a2_30;
+fk_30 = c_30*dampening / a2_30;
+
+
+
+
+
+// time shift gain db/S
+Tsg=10/30;
+
+// Counter Time Hold Zoom S
+Ctzo=4*30;
+
+// Counter Time Hold Zoom
+Cthp=1*srate;
+
+//vremia zatuhania span dB/S
+tr=20/srate;
+
+ta=1000/srate;
+
+  
+@sample
+input=spl0/2+spl1/2;
+
+maxin=-140;
+
+
+d0_1 = fk_1*input - (fa1_1*fd1_1 + fa0_1*fd2_1);
+in_1 = a2d(max(abs(d0_1 - fd2_1),0.00001))+0.5;
+
+
+out_1>in_1 ? (out_1=(out_1)-tr) : (out_1=out_1+ta);
+
+peak_1>out_1 ?  (
+    Chp_1>Cthp ? ( 
+        peak_1=peak_1-Tr; 
+        ) :
+           Chp_1=Chp_1+1;):
+                  (peak_1=out_1; Chp_1=0; (peak_1>0 ? peak_1=0;););
+
+fd2_1 = fd1_1;
+fd1_1 = d0_1;
+maxin=max(maxin,in_1);
+
+
+
+d0_2 = fk_2*input - (fa1_2*fd1_2 + fa0_2*fd2_2);
+in_2 = a2d(max(abs(d0_2 - fd2_2),0.00001))+0.5;
+
+
+out_2>in_2 ? (out_2=(out_2)-tr) : (out_2=out_2+ta);
+
+peak_2>out_2 ?  (
+    Chp_2>Cthp ? ( 
+        peak_2=peak_2-Tr; 
+        ) :
+           Chp_2=Chp_2+1;):
+                  (peak_2=out_2; Chp_2=0; (peak_2>0 ? peak_2=0;););
+
+fd2_2 = fd1_2;
+fd1_2 = d0_2;
+maxin=max(maxin,in_2);
+
+
+
+d0_3 = fk_3*input - (fa1_3*fd1_3 + fa0_3*fd2_3);
+in_3 = a2d(max(abs(d0_3 - fd2_3),0.00001))+0.5;
+
+
+out_3>in_3 ? (out_3=(out_3)-tr) : (out_3=out_3+ta);
+
+peak_3>out_3 ?  (
+    Chp_3>Cthp ? ( 
+        peak_3=peak_3-Tr; 
+        ) :
+           Chp_3=Chp_3+1;):
+                  (peak_3=out_3; Chp_3=0; (peak_3>0 ? peak_3=0;););
+
+fd2_3 = fd1_3;
+fd1_3 = d0_3;
+maxin=max(maxin,in_3);
+
+
+
+d0_4 = fk_4*input - (fa1_4*fd1_4 + fa0_4*fd2_4);
+in_4 = a2d(max(abs(d0_4 - fd2_4),0.00001))+0.5;
+
+
+out_4>in_4 ? (out_4=(out_4)-tr) : (out_4=out_4+ta);
+
+peak_4>out_4 ?  (
+    Chp_4>Cthp ? ( 
+        peak_4=peak_4-Tr; 
+        ) :
+           Chp_4=Chp_4+1;):
+                  (peak_4=out_4; Chp_4=0; (peak_4>0 ? peak_4=0;););
+
+fd2_4 = fd1_4;
+fd1_4 = d0_4;
+maxin=max(maxin,in_4);
+
+
+
+d0_5 = fk_5*input - (fa1_5*fd1_5 + fa0_5*fd2_5);
+in_5 = a2d(max(abs(d0_5 - fd2_5),0.00001))+0.5;
+
+
+out_5>in_5 ? (out_5=(out_5)-tr) : (out_5=out_5+ta);
+
+peak_5>out_5 ?  (
+    Chp_5>Cthp ? ( 
+        peak_5=peak_5-Tr; 
+        ) :
+           Chp_5=Chp_5+1;):
+                  (peak_5=out_5; Chp_5=0; (peak_5>0 ? peak_5=0;););
+
+fd2_5 = fd1_5;
+fd1_5 = d0_5;
+maxin=max(maxin,in_5);
+
+
+
+d0_6 = fk_6*input - (fa1_6*fd1_6 + fa0_6*fd2_6);
+in_6 = a2d(max(abs(d0_6 - fd2_6),0.00001))+0.5;
+
+
+out_6>in_6 ? (out_6=(out_6)-tr) : (out_6=out_6+ta);
+
+peak_6>out_6 ?  (
+    Chp_6>Cthp ? ( 
+        peak_6=peak_6-Tr; 
+        ) :
+           Chp_6=Chp_6+1;):
+                  (peak_6=out_6; Chp_6=0; (peak_6>0 ? peak_6=0;););
+
+fd2_6 = fd1_6;
+fd1_6 = d0_6;
+maxin=max(maxin,in_6);
+
+
+
+d0_7 = fk_7*input - (fa1_7*fd1_7 + fa0_7*fd2_7);
+in_7 = a2d(max(abs(d0_7 - fd2_7),0.00001))+0.5;
+
+
+out_7>in_7 ? (out_7=(out_7)-tr) : (out_7=out_7+ta);
+
+peak_7>out_7 ?  (
+    Chp_7>Cthp ? ( 
+        peak_7=peak_7-Tr; 
+        ) :
+           Chp_7=Chp_7+1;):
+                  (peak_7=out_7; Chp_7=0; (peak_7>0 ? peak_7=0;););
+
+fd2_7 = fd1_7;
+fd1_7 = d0_7;
+maxin=max(maxin,in_7);
+
+
+
+d0_8 = fk_8*input - (fa1_8*fd1_8 + fa0_8*fd2_8);
+in_8 = a2d(max(abs(d0_8 - fd2_8),0.00001))+0.5;
+
+
+out_8>in_8 ? (out_8=(out_8)-tr) : (out_8=out_8+ta);
+
+peak_8>out_8 ?  (
+    Chp_8>Cthp ? ( 
+        peak_8=peak_8-Tr; 
+        ) :
+           Chp_8=Chp_8+1;):
+                  (peak_8=out_8; Chp_8=0; (peak_8>0 ? peak_8=0;););
+
+
+fd2_8 = fd1_8;
+fd1_8 = d0_8;
+maxin=max(maxin,in_8);
+
+
+
+d0_9 = fk_9*input - (fa1_9*fd1_9 + fa0_9*fd2_9);
+in_9 = a2d(max(abs(d0_9 - fd2_9),0.00001))+0.5;
+
+
+out_9>in_9 ? (out_9=(out_9)-tr) : (out_9=out_9+ta);
+
+peak_9>out_9 ?  (
+    Chp_9>Cthp ? ( 
+        peak_9=peak_9-Tr; 
+        ) :
+           Chp_9=Chp_9+1;):
+                  (peak_9=out_9; Chp_9=0; (peak_9>0 ? peak_9=0;););
+
+fd2_9 = fd1_9;
+fd1_9 = d0_9;
+maxin=max(maxin,in_9);
+
+
+
+d0_10 = fk_10*input - (fa1_10*fd1_10 + fa0_10*fd2_10);
+in_10 = a2d(max(abs(d0_10 - fd2_10),0.00001))+0.5;
+
+
+out_10>in_10 ? (out_10=(out_10)-tr) : (out_10=out_10+ta);
+
+peak_10>out_10 ?  (
+    Chp_10>Cthp ? ( 
+        peak_10=peak_10-Tr; 
+        ) :
+           Chp_10=Chp_10+1;):
+                  (peak_10=out_10; Chp_10=0; (peak_10>0 ? peak_10=0;););
+
+fd2_10 = fd1_10;
+fd1_10 = d0_10;
+maxin=max(maxin,in_10);
+
+
+
+d0_11 = fk_11*input - (fa1_11*fd1_11 + fa0_11*fd2_11);
+in_11 = a2d(max(abs(d0_11 - fd2_11),0.00001))+0.5;
+
+
+out_11>in_11 ? (out_11=(out_11)-tr) : (out_11=out_11+ta);
+
+peak_11>out_11 ?  (
+    Chp_11>Cthp ? ( 
+        peak_11=peak_11-Tr; 
+        ) :
+           Chp_11=Chp_11+1;):
+                  (peak_11=out_11; Chp_11=0; (peak_11>0 ? peak_11=0;););
+
+fd2_11 = fd1_11;
+fd1_11 = d0_11;
+maxin=max(maxin,in_11);
+
+
+
+
+d0_12 = fk_12*input - (fa1_12*fd1_12 + fa0_12*fd2_12);
+in_12 = a2d(max(abs(d0_12 - fd2_12),0.00001))+0.5;
+
+
+out_12>in_12 ? (out_12=(out_12)-tr) : (out_12=out_12+ta);
+
+peak_12>out_12 ?  (
+    Chp_12>Cthp ? ( 
+        peak_12=peak_12-Tr; 
+        ) :
+           Chp_12=Chp_12+1;):
+                  (peak_12=out_12; Chp_12=0; (peak_12>0 ? peak_12=0;););
+
+fd2_12 = fd1_12;
+fd1_12 = d0_12;
+maxin=max(maxin,in_12);
+
+
+
+
+d0_13 = fk_13*input - (fa1_13*fd1_13 + fa0_13*fd2_13);
+in_13 = a2d(max(abs(d0_13 - fd2_13),0.00001))+0.5;
+
+
+out_13>in_13 ? (out_13=(out_13)-tr) : (out_13=out_13+ta);
+
+peak_13>out_13 ?  (
+    Chp_13>Cthp ? ( 
+        peak_13=peak_13-Tr; 
+        ) :
+           Chp_13=Chp_13+1;):
+                  (peak_13=out_13; Chp_13=0; (peak_13>0 ? peak_13=0;););
+
+fd2_13 = fd1_13;
+fd1_13 = d0_13;
+maxin=max(maxin,in_13);
+
+
+
+d0_14 = fk_14*input - (fa1_14*fd1_14 + fa0_14*fd2_14);
+in_14 = a2d(max(abs(d0_14 - fd2_14),0.00001))+0.5;
+
+
+out_14>in_14 ? (out_14=(out_14)-tr) : (out_14=out_14+ta);
+
+peak_14>out_14 ?  (
+    Chp_14>Cthp ? ( 
+        peak_14=peak_14-Tr; 
+        ) :
+           Chp_14=Chp_14+1;):
+                  (peak_14=out_14; Chp_14=0; (peak_14>0 ? peak_14=0;););
+
+fd2_14 = fd1_14;
+fd1_14 = d0_14;
+maxin=max(maxin,in_14);
+
+
+
+d0_15 = fk_15*input - (fa1_15*fd1_15 + fa0_15*fd2_15);
+in_15 = a2d(max(abs(d0_15 - fd2_15),0.00001))+0.5;
+
+
+out_15>in_15 ? (out_15=(out_15)-tr) : (out_15=out_15+ta);
+
+peak_15>out_15 ?  (
+    Chp_15>Cthp ? ( 
+        peak_15=peak_15-Tr; 
+        ) :
+           Chp_15=Chp_15+1;):
+                  (peak_15=out_15; Chp_15=0; (peak_15>0 ? peak_15=0;););
+
+fd2_15 = fd1_15;
+fd1_15 = d0_15;
+maxin=max(maxin,in_15);
+
+
+
+d0_16 = fk_16*input - (fa1_16*fd1_16 + fa0_16*fd2_16);
+in_16 = a2d(max(abs(d0_16 - fd2_16),0.00001))+0.5;
+
+
+out_16>in_16 ? (out_16=(out_16)-tr) : (out_16=out_16+ta);
+
+peak_16>out_16 ?  (
+    Chp_16>Cthp ? ( 
+        peak_16=peak_16-Tr; 
+        ) :
+           Chp_16=Chp_16+1;):
+                  (peak_16=out_16; Chp_16=0; (peak_16>0 ? peak_16=0;););
+
+fd2_16 = fd1_16;
+fd1_16 = d0_16;
+maxin=max(maxin,in_16);
+
+
+
+d0_17 = fk_17*input - (fa1_17*fd1_17 + fa0_17*fd2_17);
+in_17 = a2d(max(abs(d0_17 - fd2_17),0.00001))+0.5;
+
+
+out_17>in_17 ? (out_17=(out_17)-tr) : (out_17=out_17+ta);
+
+peak_17>out_17 ?  (
+    Chp_17>Cthp ? ( 
+        peak_17=peak_17-Tr; 
+        ) :
+           Chp_17=Chp_17+1;):
+                  (peak_17=out_17; Chp_17=0; (peak_17>0 ? peak_17=0;););
+
+fd2_17 = fd1_17;
+fd1_17 = d0_17;
+maxin=max(maxin,in_17);
+
+
+
+d0_18 = fk_18*input - (fa1_18*fd1_18 + fa0_18*fd2_18);
+in_18 = a2d(max(abs(d0_18 - fd2_18),0.00001))+0.5;
+
+
+out_18>in_18 ? (out_18=(out_18)-tr) : (out_18=out_18+ta);
+
+peak_18>out_18 ?  (
+    Chp_18>Cthp ? ( 
+        peak_18=peak_18-Tr; 
+        ) :
+           Chp_18=Chp_18+1;):
+                  (peak_18=out_18; Chp_18=0; (peak_18>0 ? peak_18=0;););
+
+fd2_18 = fd1_18;
+fd1_18 = d0_18;
+maxin=max(maxin,in_18);
+
+
+
+d0_19 = fk_19*input - (fa1_19*fd1_19 + fa0_19*fd2_19);
+in_19 = a2d(max(abs(d0_19 - fd2_19),0.00001))+0.5;
+
+
+out_19>in_19 ? (out_19=(out_19)-tr) : (out_19=out_19+ta);
+
+peak_19>out_19 ?  (
+    Chp_19>Cthp ? ( 
+        peak_19=peak_19-Tr; 
+        ) :
+           Chp_19=Chp_19+1;):
+                  (peak_19=out_19; Chp_19=0; (peak_19>0 ? peak_19=0;););
+
+fd2_19 = fd1_19;
+fd1_19 = d0_19;
+maxin=max(maxin,in_19);
+
+
+
+d0_20 = fk_20*input - (fa1_20*fd1_20 + fa0_20*fd2_20);
+in_20 = a2d(max(abs(d0_20 - fd2_20),0.00001))+0.5;
+
+
+out_20>in_20 ? (out_20=(out_20)-tr) : (out_20=out_20+ta);
+
+peak_20>out_20 ?  (
+    Chp_20>Cthp ? ( 
+        peak_20=peak_20-Tr; 
+        ) :
+           Chp_20=Chp_20+1;):
+                  (peak_20=out_20; Chp_20=0; (peak_20>0 ? peak_20=0;););
+
+fd2_20 = fd1_20;
+fd1_20 = d0_20;
+maxin=max(maxin,in_20);
+
+
+
+d0_21 = fk_21*input - (fa1_21*fd1_21 + fa0_21*fd2_21);
+in_21 = a2d(max(abs(d0_21 - fd2_21),0.00001))+0.5;
+
+
+out_21>in_21 ? (out_21=(out_21)-tr) : (out_21=out_21+ta);
+
+peak_21>out_21 ?  (
+    Chp_21>Cthp ? ( 
+        peak_21=peak_21-Tr; 
+        ) :
+           Chp_21=Chp_21+1;):
+                  (peak_21=out_21; Chp_21=0; (peak_21>0 ? peak_21=0;););
+
+fd2_21 = fd1_21;
+fd1_21 = d0_21;
+maxin=max(maxin,in_21);
+
+
+
+d0_22 = fk_22*input - (fa1_22*fd1_22 + fa0_22*fd2_22);
+in_22 = a2d(max(abs(d0_22 - fd2_22),0.00001))+0.5;
+
+
+out_22>in_22 ? (out_22=(out_22)-tr) : (out_22=out_22+ta);
+
+peak_22>out_22 ?  (
+    Chp_22>Cthp ? ( 
+        peak_22=peak_22-Tr; 
+        ) :
+           Chp_22=Chp_22+1;):
+                  (peak_22=out_22; Chp_22=0; (peak_22>0 ? peak_22=0;););
+
+fd2_22 = fd1_22;
+fd1_22 = d0_22;
+maxin=max(maxin,in_22);
+
+
+
+d0_23 = fk_23*input - (fa1_23*fd1_23 + fa0_23*fd2_23);
+in_23 = a2d(max(abs(d0_23 - fd2_23),0.00001))+0.5;
+
+
+out_23>in_23 ? (out_23=(out_23)-tr) : (out_23=out_23+ta);
+
+peak_23>out_23 ?  (
+    Chp_23>Cthp ? ( 
+        peak_23=peak_23-Tr; 
+        ) :
+           Chp_23=Chp_23+1;):
+                  (peak_23=out_23; Chp_23=0; (peak_23>0 ? peak_23=0;););
+
+fd2_23 = fd1_23;
+fd1_23 = d0_23;
+maxin=max(maxin,in_23);
+
+
+d0_24 = fk_24*input - (fa1_24*fd1_24 + fa0_24*fd2_24);
+in_24 = a2d(max(abs(d0_24 - fd2_24),0.00001))+0.5;
+
+
+out_24>in_24 ? (out_24=(out_24)-tr) : (out_24=out_24+ta);
+
+peak_24>out_24 ?  (
+    Chp_24>Cthp ? ( 
+        peak_24=peak_24-Tr; 
+        ) :
+           Chp_24=Chp_24+1;):
+                  (peak_24=out_24; Chp_24=0; (peak_24>0 ? peak_24=0;););
+
+fd2_24 = fd1_24;
+fd1_24 = d0_24;
+maxin=max(maxin,in_24);
+
+
+
+d0_25 = fk_25*input - (fa1_25*fd1_25 + fa0_25*fd2_25);
+in_25 = a2d(max(abs(d0_25 - fd2_25),0.00001))+0.5;
+
+
+out_25>in_25 ? (out_25=(out_25)-tr) : (out_25=out_25+ta);
+
+peak_25>out_25 ?  (
+    Chp_25>Cthp ? ( 
+        peak_25=peak_25-Tr; 
+        ) :
+           Chp_25=Chp_25+1;):
+                  (peak_25=out_25; Chp_25=0; (peak_25>0 ? peak_25=0;););
+
+fd2_25 = fd1_25;
+fd1_25 = d0_25;
+maxin=max(maxin,in_25);
+
+
+
+d0_26 = fk_26*input - (fa1_26*fd1_26 + fa0_26*fd2_26);
+in_26 = a2d(max(abs(d0_26 - fd2_26),0.00001))+0.5;
+
+
+out_26>in_26 ? (out_26=(out_26)-tr) : (out_26=out_26+ta);
+
+peak_26>out_26 ?  (
+    Chp_26>Cthp ? ( 
+        peak_26=peak_26-Tr; 
+        ) :
+           Chp_26=Chp_26+1;):
+                  (peak_26=out_26; Chp_26=0; (peak_26>0 ? peak_26=0;););
+
+fd2_26 = fd1_26;
+fd1_26 = d0_26;
+maxin=max(maxin,in_26);
+
+
+
+d0_27 = fk_27*input - (fa1_27*fd1_27 + fa0_27*fd2_27);
+in_27 = a2d(max(abs(d0_27 - fd2_27),0.00001))+0.5;
+
+
+out_27>in_27 ? (out_27=(out_27)-tr) : (out_27=out_27+ta);
+
+peak_27>out_27 ?  (
+    Chp_27>Cthp ? ( 
+        peak_27=peak_27-Tr; 
+        ) :
+           Chp_27=Chp_27+1;):
+                  (peak_27=out_27; Chp_27=0; (peak_27>0 ? peak_27=0;););
+
+fd2_27 = fd1_27;
+fd1_27 = d0_27;
+maxin=max(maxin,in_27);
+
+
+
+d0_28 = fk_28*input - (fa1_28*fd1_28 + fa0_28*fd2_28);
+in_28 = a2d(max(abs(d0_28 - fd2_28),0.00001))+0.5;
+
+
+out_28>in_28 ? (out_28=(out_28)-tr) : (out_28=out_28+ta);
+
+peak_28>out_28 ?  (
+    Chp_28>Cthp ? ( 
+        peak_28=peak_28-Tr; 
+        ) :
+           Chp_28=Chp_28+1;):
+                  (peak_28=out_28; Chp_28=0; (peak_28>0 ? peak_28=0;););
+
+fd2_28 = fd1_28;
+fd1_28 = d0_28;
+maxin=max(maxin,in_28);
+
+
+
+d0_29 = fk_29*input - (fa1_29*fd1_29 + fa0_29*fd2_29);
+in_29 = a2d(max(abs(d0_29 - fd2_29),0.00001))+0.5;
+
+
+out_29>in_29 ? (out_29=(out_29)-tr) : (out_29=out_29+ta);
+
+peak_29>out_29 ?  (
+    Chp_29>Cthp ? ( 
+        peak_29=peak_29-Tr; 
+        ) :
+           Chp_29=Chp_29+1;):
+                  (peak_29=out_29; Chp_29=0; (peak_29>0 ? peak_29=0;););
+
+fd2_29 = fd1_29;
+fd1_29 = d0_29;
+maxin=max(maxin,in_29);
+
+
+
+d0_30 = fk_30*input - (fa1_30*fd1_30 + fa0_30*fd2_30);
+in_30 = a2d(max(abs(d0_30 - fd2_30),0.00001))+0.5;
+
+
+out_30>in_30 ? (out_30=(out_30)-tr) : (out_30=out_30+ta);
+
+peak_30>out_30 ?  (
+    Chp_30>Cthp ? ( 
+        peak_30=peak_30-Tr; 
+        ) :
+           Chp_30=Chp_30+1;):
+                  (peak_30=out_30; Chp_30=0; (peak_30>0 ? peak_30=0;););
+
+fd2_30 = fd1_30;
+fd1_30 = d0_30;
+maxin=max(maxin,in_30);
+
+
+
+
+
+
+
+ 
+
+@gfx 634 224
+
+// shift gain
+
+mouse_cap!=0 ? (
+                  (mouse_cap == 9  ? ShiftStatus=slider2=0);
+                  (mouse_cap == 10 ? ShiftStatus=slider2=1);
+                  (mouse_cap == 1  ?  PeakStatus=slider1=1);
+                  (mouse_cap == 2  ?  PeakStatus=slider1=0);
+                );
+
+ShiftStatus==0 ? 
+(
+output>maxin ? output=output-Tsg : output=maxin;
+
+Zout>output ? (
+                 Ctz>Ctzo ? (Zout=Zout-Tsg;): Ctz=Ctz=Ctz+1; ) : (Zout=Zout+Tsg*10; Ctz=0;);
+Zo=min(max(10*ceil(Zout/10),-50),-10); 
+):(
+Zo=-10);
+
+
+gfx_w>900 ? 
+      (Lx=22; Ly=6; Wa=350; Ha=845; Xp=28; Yp=7; Hy=70; Z1=1):
+      (Lx=15; Ly=4; Wa=250; Ha=573; Xp=19; Yp=5; Hy=50; Z1=0);
+
+//Zalivka temno zelenym cvetom
+gfx_r=0; gfx_g=0.282; gfx_b=0.165;
+gfx_x=X0; gfx_y=0; gfx_a=1;
+gfx_rectto (X0+Ha,Wa);
+
+//Zalivka dark yellow
+gfx_r=0.2863; gfx_g=0.302; gfx_b=0;
+a=0;
+loop(6, gfx_x=X0; gfx_y=a; gfx_rectto (X0+Ha,a+Ly); a=a+Hy;);
+
+
+//Green Led Indicator
+
+//gfx_r=0; gfx_g=0.8; gfx_b=0.5;
+gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;
+
+a=X0+Ly;
+
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_1-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_2-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_3-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_4-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_5-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_6-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_7-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_8-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_9-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_10-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_11-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_12-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_13-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_14-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_15-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_16-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_17-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_18-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_19-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_20-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_21-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_22-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_23-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_24-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_25-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_26-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_27-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_28-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_29-10-Zo)+Wa,0));a=a+Xp;
+gfx_x=a; gfx_y=Wa; gfx_rectto (a+Lx,Wa-max(Yp*floor(out_30-10-Zo)+Wa,0));a=a+Xp;
+
+
+
+
+
+//Yelow Led
+gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;
+
+a=X0+Ly;
+
+bb=0;
+    loop(min(floor((50-Zo+out_1)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_2)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_3)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_4)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_5)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_6)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_7)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_8)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_9)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_10)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_11)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_12)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_13)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_14)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_15)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_16)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_17)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_18)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_19)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_20)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_21)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_22)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_23)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_24)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_25)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_26)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_27)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_28)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_29)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+bb=0;
+    loop(min(floor((50-Zo+out_30)/10),7),
+        gfx_x=a; gfx_y=Wa-bb;
+        gfx_rectto (a+Xp,gfx_y+Ly);bb=bb+Hy); 
+    a=a+Xp;
+
+
+
+//Peak Led
+
+
+a=X0+Ly;
+b=1;
+loop(PeakStatus,bb=0;
+    
+          (10*floor((peak_1)/10)==floor(peak_1) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_1)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+    
+          (10*floor((peak_2)/10)==floor(peak_2) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_2)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_3)/10)==floor(peak_3) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_3)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-4); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_4)/10)==floor(peak_4) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_4)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_5)/10)==floor(peak_5) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_5)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_6)/10)==floor(peak_6) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_6)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+XP;
+
+    
+          (10*floor((peak_7)/10)==floor(peak_7) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=ly-Yp*max(floor(Peak_7)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_8)/10)==floor(peak_8) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_8)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_9)/10)==floor(peak_9) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_9)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_10)/10)==floor(peak_10) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_10)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_11)/10)==floor(peak_11) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_11)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_12)/10)==floor(peak_12) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_12)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_13)/10)==floor(peak_13) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_13)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_14)/10)==floor(peak_14) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_14)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_15)/10)==floor(peak_15) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_15)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_16)/10)==floor(peak_16) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_16)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_17)/10)==floor(peak_17) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_17)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_18)/10)==floor(peak_18) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_18)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_19)/10)==floor(peak_19) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_19)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_20)/10)==floor(peak_20) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_20)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_21)/10)==floor(peak_21) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_21)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_22)/10)==floor(peak_22) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_22)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_23)/10)==floor(peak_23) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_23)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_24)/10)==floor(peak_24) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_24)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_25)/10)==floor(peak_25) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_25)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_26)/10)==floor(peak_26) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_26)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_27)/14)==floor(peak_27) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_27)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_28)/10)==floor(peak_28) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_28)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_29)/10)==floor(peak_29) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_29)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+    
+          (10*floor((peak_30)/10)==floor(peak_30) ? 
+                              (gfx_r=0.9529; gfx_g=0.9804; gfx_b=0.1608;;):
+                              (gfx_r=0.1569; gfx_g=0.9686; gfx_b=0.7686;););
+    
+        gfx_x=a; gfx_y=Ly-Yp*max(floor(Peak_30)-Zo-10,-51);
+        gfx_rectto (a+Lx,gfx_y-Ly); 
+        a=a+Xp;
+
+
+
+
+);
+
+
+//razdelenie horizontalnoe
+gfx_r=0.1373; gfx_g=0.1216; gfx_b=0.1098;
+a=Ly;
+loop(50, gfx_x=X0; gfx_y=a; gfx_lineto (X0+Ha,a,1); a=a+Yp;);
+
+//razdelenie verticalnoe
+gfx_r=gfx_b=gfx_g=0.3137;
+a=X0;
+loop(31, gfx_x=a; gfx_y=0; gfx_rectto (a+Ly,Wa+lY); a=a+Lx+Ly;);
+gfx_x=X0; gfx_y=Wa+Ly; gfx_rectto (X0+Ha+1,Wa+Ly+Yp);
+
+//Scale dB text
+gfx_r=gfx_b=gfx_g=0.5;
+
+a=1;
+loop (5, 
+      gfx_x=0; gfx_y=a*Hy; gfx_drawnumber(10+Zo-10*a,0); 
+      gfx_x=X0+Ha+6;gfx_drawnumber(10+Zo-10*a,0); a=a+1;
+      );
+
+// Scale Freq
+gfx_y=Wa+3*Ly+1;
+
+Z1==0 ?(
+gfx_x=X0+4; gfx_drawnumber(25,0);
+gfx_x=X0+42; gfx_drawnumber(40,0);
+gfx_x=X0+80; gfx_drawnumber(63,0);
+gfx_x=X0+114; gfx_drawnumber(100,0);
+gfx_x=X0+153; gfx_drawnumber(160,0);
+gfx_x=X0+190; gfx_drawnumber(250,0);
+gfx_x=X0+228; gfx_drawnumber(400,0);
+gfx_x=X0+266; gfx_drawnumber(630,0);
+gfx_x=X0+304; gfx_drawnumber(1,1);
+gfx_x=X0+342; gfx_drawnumber(1.6,1);
+gfx_x=X0+380; gfx_drawnumber(2.5,1);
+gfx_x=X0+418; gfx_drawnumber(4,1);
+gfx_x=X0+456; gfx_drawnumber(6.31,1);
+gfx_x=X0+490; gfx_drawnumber(10,1);
+gfx_x=X0+528; gfx_drawnumber(16,1);
+):(
+gfx_x=X0+9; gfx_drawnumber(25,0);
+gfx_x=X0+66; gfx_drawnumber(40,0);
+gfx_x=X0+122; gfx_drawnumber(63,0);
+gfx_x=X0+174; gfx_drawnumber(100,0);
+gfx_x=X0+230; gfx_drawnumber(160,0);
+gfx_x=X0+286; gfx_drawnumber(250,0);
+gfx_x=X0+343; gfx_drawnumber(400,0);
+gfx_x=X0+399; gfx_drawnumber(630,0);
+gfx_x=X0+454; gfx_drawnumber(1,1);
+gfx_x=X0+510; gfx_drawnumber(1.6,1);
+gfx_x=X0+566; gfx_drawnumber(2.5,1);
+gfx_x=X0+622; gfx_drawnumber(4,1);
+gfx_x=X0+678; gfx_drawnumber(6.31,1);
+gfx_x=X0+730; gfx_drawnumber(10,1);
+gfx_x=X0+788; gfx_drawnumber(16,1);
+);
+
+gfx_y=Wa+5*Yp;
+
+Z1==0 ?(
+gfx_x=X0+16; gfx_drawnumber(31.5,1);
+gfx_x=X0+61; gfx_drawnumber(50,0);
+gfx_x=X0+99; gfx_drawnumber(80,0);
+gfx_x=X0+132; gfx_drawnumber(125,0);
+gfx_x=X0+170; gfx_drawnumber(200,0);
+gfx_x=X0+208; gfx_drawnumber(315,0);
+gfx_x=X0+246; gfx_drawnumber(500,0);
+gfx_x=X0+284; gfx_drawnumber(800,0);
+gfx_x=X0+320; gfx_drawnumber(1.250,2);
+gfx_x=X0+362; gfx_drawnumber(2,1);
+gfx_x=X0+396; gfx_drawnumber(3.155,2);
+gfx_x=X0+438; gfx_drawnumber(5,1);
+gfx_x=X0+476; gfx_drawnumber(8,1);
+gfx_x=X0+510; gfx_drawnumber(12.5,1);
+gfx_x=X0+548; gfx_drawnumber(20,1);
+
+):(
+
+gfx_x=X0+28; gfx_drawnumber(31.5,1);
+gfx_x=X0+94; gfx_drawnumber(50,0);
+gfx_x=X0+150; gfx_drawnumber(80,0);
+gfx_x=X0+202; gfx_drawnumber(125,0);
+gfx_x=X0+258; gfx_drawnumber(200,0);
+gfx_x=X0+314; gfx_drawnumber(315,0);
+gfx_x=X0+370; gfx_drawnumber(500,0);
+gfx_x=X0+426; gfx_drawnumber(800,0);
+gfx_x=X0+478; gfx_drawnumber(1.250,2);
+gfx_x=X0+538; gfx_drawnumber(2,1);
+gfx_x=X0+592; gfx_drawnumber(3.155,2);
+gfx_x=X0+650; gfx_drawnumber(5,1);
+gfx_x=X0+706; gfx_drawnumber(8,1);
+gfx_x=X0+758; gfx_drawnumber(12.5,1);
+gfx_x=X0+816; gfx_drawnumber(20,1);
+);

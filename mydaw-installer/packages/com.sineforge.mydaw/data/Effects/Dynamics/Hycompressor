@@ -1,0 +1,523 @@
+desc:Comp Test6 0.04
+
+Author Belov Vladimir
+       
+V0.01 09.08.2022
+v0.02 Dual Mode
+v0.03 Mix Dry Wet
+v0.04 Feed Back
+
+
+
+slider1:0<-40,40,1>In Gain
+slider2:0<-40,0,1>Treshold
+
+slider4:20<1,100,1>Attack
+slider5:200<10,1000,1>Release
+
+slider7:0<0,1>Style 1<>2
+
+slider9:2500<100,10000>Attack 2
+slider10:2500<10,10000>Release 2
+
+slider12:0<-12,12,1>Out Gain
+slider13:90<50,100>Mix%
+slider14:4<0,10,1>-RMS
+
+slider16:0<0,2,1{Own(1-2),Side Chain (3-4),FeedBack}>Detect
+
+slider18:10<0,100>Chan Link
+
+@init
+ext_nodenorm=0;
+ext_noinit=1;
+
+g=gf=gs=gful=
+g1=gf1=gs1=gful1=
+g2=gf2=gs2=gful2=
+gr_meter=gr_meter1=gr_meter2=
+gr_meterf=gr_meterf1=gr_meterf=
+gr_meters=gr_meters1=gr_meters2=
+1;
+
+
+@slider
+(
+aaf=exp(-log(9)/srate/slider4*1000);
+arf=exp(-log(9)/srate/slider5*1000);
+
+aas=exp(-log(9)/srate/slider9*1000);
+ars=exp(-log(9)/srate/slider10*1000);
+
+aai=exp(-log(9)/10/10*1000);
+ari=exp(-log(9)/10/300*1000);
+
+Ginv=10^(slider1/20);
+GoutV=10^(slider12/20);
+treshold=(10^((slider2-3)/20)); // Масштабирование под RMS
+
+mix=slider13/100;
+
+c1=Goutv * treshold * mix; 
+c2=treshold / Ginv; 
+c3=(1 - mix)* Goutv;
+ci=Goutv * Ginv;
+
+cs=slider7; cf=(1-slider7);
+
+m1=slider13/100;
+m0=1-m1;
+
+chl2=slider18/200;
+chl1=1-chl2;
+
+RMSt=slider14; // RMS time mSec
+RMStc=exp(-1/(srate * 0.001 * RMSt)); // RMS time constant
+OmRMStc=1-RMStc; //1 minus RMStc
+);
+
+
+
+
+
+
+
+@sample
+//////////////////
+// Channel Link //
+//////////////////
+//
+//////////////////////////////////////////////////////////////////////////////
+//
+//////////////////////////////////////////////////////////////////////////////
+//
+//////////////////////////////////////////////////////////////////////////////
+
+
+slider18==100 ? (
+
+/////////////////////////
+// Side Chain Selector //
+/////////////////////////
+slider16 == 0 ? in=max(abs(spl0),abs(spl1)); 
+slider16 == 1 ? in=max(abs(spl2),abs(spl3)); 
+slider16 == 2 ? in=max(abs(out0),abs(out1));
+
+/////////
+// RMS //
+/////////
+
+inMS=inMS*RMStc + in*in*(OmRMStc);
+inRMS=sqrt(inMS);
+
+//////////
+// Comp //
+//////////
+
+g=c1 / ( c2 + inRMS ) + c3;
+
+
+
+//////////
+// ADSR //
+//////////
+
+g<gf ? (gf=aaf*(gf-g) + g) : (gf=arf*(gf-g) + g);
+g<gs ? (gs=aas*(gs-g) + g) : (gs=ars*(gs-g) + g);
+
+gful=gf*cf + gs*cs;
+
+spl0*=gful;
+spl1*=gful;
+
+out0=spl0;
+out1=spl1;
+
+):(
+// Dual //
+
+/////////////////////////
+// Side Chain Selector //
+/////////////////////////
+
+slider16 == 0 ? (in1t=spl0;in2t=spl1);
+slider16 == 1 ? (in1t=spl2;in2t=spl3);
+slider16 == 2 ? (in1t=out0;in2t=out1);
+                in1=in1t*chl1 + in2t*chl2 ;
+                in2=in2t*chl1 + in1t*chl2 ;
+
+/////////
+// RMS //
+/////////
+
+inMS1=inMS1*RMStc + in1*in1*(OmRMStc);
+inRMS1=sqrt(inMS1);
+
+inMS2=inMS2*RMStc + in2*in2*(OmRMStc);
+inRMS2=sqrt(inMS2);
+
+//////////
+// Comp //
+//////////
+
+g1=c1 / ( c2 + inRMS1 ) + c3;
+g2=c1 / ( c2 + inRMS2 ) + c3;
+
+
+
+//////////
+// ADSR //
+//////////
+
+g1<gf1 ? (gf1=aaf*(gf1-g1) + g1) : (gf1=arf*(gf1-g1) + g1);
+g1<gs1 ? (gs1=aas*(gs1-g1) + g1) : (gs1=ars*(gs1-g1) + g1);
+
+g2<gf2 ? (gf2=aaf*(gf2-g2) + g2) : (gf2=arf*(gf2-g2) + g2);
+g2<gs2 ? (gs2=aas*(gs2-g2) + g2) : (gs2=ars*(gs2-g2) + g2);
+
+gful1=gf1*cf + gs1*cs;
+gful2=gf2*cf + gs2*cs;
+
+spl0*=gful1;
+spl1*=gful2;
+
+out0=spl0;
+out1=spl1;
+
+);
+
+@gfx 0 32 
+slider18==100 ?
+(
+gfl=(gf/ci)^cf;
+gsl=(gs/ci)^cs;
+ggfx=gful/ci;
+
+ggfx<gr_meter ? (gr_meter=aai*(gr_meter-ggfx) + ggfx) : 
+                (gr_meter=ari*(gr_meter-ggfx) + ggfx);
+                
+gfl<gr_meterf ? (gr_meterf=aai*(gr_meterf-gfl) + gfl) : 
+                (gr_meterf=ari*(gr_meterf-gfl) + gfl);
+                
+gsl<gr_meters ? (gr_meters=aai*(gr_meters-gsl) + gsl) : 
+                (gr_meters=ari*(gr_meters-gsl) + gsl);
+                
+ 
+  gfx_r=1; gfx_g=gfx_b=0; gfx_a=0.7;
+  
+  meter_bot=1;
+  meter_h=32; //min(gfx_h,32);
+  xscale=gfx_w/meter_bot;
+
+  gfx_y=0;
+  gfx_x=gr_meter*xscale;
+  gfx_rectto(gfx_w,10);
+  
+  gfx_y=11;
+  gfx_x=gr_meterf*xscale;
+  gfx_rectto(gfx_w,21);
+  
+  gfx_y=22;
+  gfx_x=gr_meters*xscale;
+  gfx_rectto(gfx_w,33);
+
+  gfx_r=gfx_g=gfx_b=1.0; gfx_a=0.6;
+
+        gfx_x=0.89125*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-1,0);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+        
+        
+        gfx_x=0.75*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-2.5,1);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+/*        
+        gfx_x=0.708*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-3,0);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+*/        
+        gfx_x=0.631*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-4,0);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+/*       
+        gfx_x=0.56234*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-5,0);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+*/        
+        gfx_x=0.5*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-6,0);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+/*       
+        gfx_x=0.446684*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-7,0);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+*/       
+        
+        gfx_x=0.3758*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-8.5,1);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+        aaaa=10^(-8.5/20);
+        
+        gfx_x=0.2512*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-12,0);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+        
+        gfx_x=0.1*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-20,0);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+       
+  gfx_a=0.7;
+
+  gfx_x=0; gfx_y=3;//meter_h/2 - gfx_texth/2;
+  gfx_drawnumber(log10(gr_meter)*20,1);
+  gfx_drawchar($'d');
+  gfx_drawchar($'B');
+  
+  gfx_measurestr("all",x1,y1);
+  gfx_x=gfx_w-x1; gfx_y=2;
+  gfx_drawstr("all");
+  
+
+  gfx_x=gfx_w-8; gfx_y=13;
+  gfx_drawchar($'1');
+  
+  gfx_x=gfx_w-8; gfx_y=24;
+  gfx_drawchar($'2');
+  
+):
+//////////
+// Dual //
+//////////
+
+(
+gfl1=(gf1/ci)^cf;
+gsl1=(gs1/ci)^cs;
+ggfx1=gful1/ci;
+
+gfl2=(gf2/ci)^cf;
+gsl2=(gs2/ci)^cs;
+ggfx2=gful2/ci;
+
+ggfx1<gr_meter1 ? (gr_meter1=aai*(gr_meter1-ggfx1) + ggfx1) : 
+                  (gr_meter1=ari*(gr_meter1-ggfx1) + ggfx1);
+                
+gfl1<gr_meterf1 ? (gr_meterf1=aai*(gr_meterf1-gfl1) + gfl1) : 
+                  (gr_meterf1=ari*(gr_meterf1-gfl1) + gfl1);
+                
+gsl1<gr_meters1 ? (gr_meters1=aai*(gr_meters1-gsl1) + gsl1) : 
+                  (gr_meters1=ari*(gr_meters1-gsl1) + gsl1);
+                
+ggfx2<gr_meter2 ? (gr_meter2=aai*(gr_meter2-ggfx2) + ggfx2) : 
+                  (gr_meter2=ari*(gr_meter2-ggfx2) + ggfx2);
+                
+gfl2<gr_meterf2 ? (gr_meterf2=aai*(gr_meterf2-gfl2) + gfl2) : 
+                  (gr_meterf2=ari*(gr_meterf2-gfl2) + gfl2);
+                
+gsl2<gr_meters2 ? (gr_meters2=aai*(gr_meters2-gsl2) + gsl2) : 
+                  (gr_meters2=ari*(gr_meters2-gsl2) + gsl2);                
+                
+  meter_bot=1;
+  meter_h=32; //min(gfx_h,32);
+  xscale=gfx_w/meter_bot; 
+  
+ 
+  gfx_r=1; gfx_g=0; gfx_b=0; gfx_a=1;
+  
+  gfx_y=0;
+  gfx_x=gr_meter1*xscale;
+  gfx_rectto(gfx_w,10);
+  
+  gfx_y=11;
+  gfx_x=gr_meterf1*xscale;
+  gfx_rectto(gfx_w,21);
+  
+  gfx_y=22;
+  gfx_x=gr_meters1*xscale;
+  gfx_rectto(gfx_w,33);
+  
+  
+  gfx_r=0; gfx_g=0.7; gfx_b=0; gfx_a=1;
+ 
+  gfx_y=0;
+  gfx_x=gr_meter2*xscale;
+  gfx_rectto(gfx_w,10);
+  
+  gfx_y=11;
+  gfx_x=gr_meterf2*xscale;
+  gfx_rectto(gfx_w,21);
+  
+  gfx_y=22;
+  gfx_x=gr_meters2*xscale;
+  gfx_rectto(gfx_w,33);
+  
+  
+  gfx_r=0.5; gfx_g=0; gfx_b=0; gfx_a=1;
+  
+  gfx_y=0;
+  gfx_x=max(gr_meter1,gr_meter2)*xscale;
+  gfx_rectto(gfx_w,10);
+  
+  gfx_y=11;
+  gfx_x=max(gr_meterf1,gr_meterf2)*xscale;
+  gfx_rectto(gfx_w,21);
+  
+  gfx_y=22;
+  gfx_x=max(gr_meters1,gr_meters2)*xscale;
+  gfx_rectto(gfx_w,33);
+  
+
+  gfx_r=gfx_g=gfx_b=1.0; gfx_a=0.6;
+ 
+        
+        gfx_x=0.89125*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-1,0);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+        
+        gfx_x=0.794328*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-2,0);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+        
+        gfx_x=0.708*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-3,0);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+        //aaaa=10^(-8/20);
+/*        
+        gfx_a=0.3;
+        gfx_x=0.631*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_a=0.6;
+*/       
+        gfx_x=0.56234*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-5,0);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+/*       
+        gfx_a=0.3;
+        gfx_x=0.5*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_a=0.6;
+*/       
+        gfx_x=0.446684*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-7,0);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+        
+        gfx_x=0.31623*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-10,0);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+        
+        gfx_x=0.1*xscale;
+        gfx_y=0;
+        gfx_lineto(gfx_x,meter_h,0);
+        gfx_y=meter_h-gfx_texth;
+        gfx_x+=2;
+        gfx_drawnumber(-20,0);
+        gfx_drawchar($'d');
+        gfx_drawchar($'B');
+       
+  gfx_a=0.7;
+
+  gfx_x=0; gfx_y=3;//meter_h/2 - gfx_texth/2;
+  gfx_drawnumber(log10(gr_meter1)*20,1);
+  gfx_drawchar($'d');
+  gfx_drawchar($'B');
+  
+  gfx_x=0; gfx_y=14;//meter_h/2 - gfx_texth/2;
+  gfx_drawnumber(log10(gr_meter2)*20,1);
+  gfx_drawchar($'d');
+  gfx_drawchar($'B');
+  
+  gfx_measurestr("all",x1,y1);
+  gfx_x=gfx_w-x1; gfx_y=2;
+  gfx_drawstr("all");
+  
+
+  gfx_x=gfx_w-8; gfx_y=13;
+  gfx_drawchar($'1');
+  
+  gfx_x=gfx_w-8; gfx_y=24;
+  gfx_drawchar($'2');
+  
+);

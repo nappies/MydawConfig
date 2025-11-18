@@ -1,0 +1,103 @@
+desc:Note To Program Change
+
+slider2:0<0,16,1{Any,Channel 01,Channel 02,Channel 03,Channel 04,Channel 05,Channel 06,Channel 07,Channel 08,Channel 09,Channel 10,Channel 11,Channel 12,Channel 13,Channel 14,Channel 15,Channel 16}>on MIDI  
+ 
+// ==========================================================  
+@init  
+    NOTE_ON = 9;  
+    NOTE_OFF = 8;  
+    CC = 11;  
+    PC = 12;
+    PChange_Null =0; 
+    PChange_C   = 1;
+    PChange_C_s = 2;
+    PChange_D   = 3;
+    PChange_D_s = 4;
+    PChange_E   = 5;
+    PChange_F   = 6;
+    PChange_F_s = 7;
+    PChange_G   = 8;
+    PChange_G_s = 9;
+    PChange_A   = 10;
+    PChange_A_s = 11;
+    PChange_B   = 12;
+    
+ 
+ n_t[0]=24;n_t[1]=36;n_t[2]=48;   n_t[3]=60;n_t[4]=72;  ///C
+ n_t[5]=25;n_t[6]=37;n_t[7]=49;   n_t[8]=61;n_t[9]=73;  ///C#
+n_t[10]=26;n_t[11]=38;n_t[12]=50;n_t[13]=62;n_t[14]=74; ///D
+n_t[15]=27;n_t[16]=39;n_t[17]=51;n_t[18]=63;            ///D#!!!
+n_t[19]=28;n_t[20]=40;n_t[21]=52;n_t[22]=64;            ///E
+n_t[23]=29;n_t[24]=41;n_t[25]=53;n_t[26]=65;            ///F
+n_t[27]=30;n_t[28]=42;n_t[29]=54;n_t[30]=66;            ///F#
+n_t[31]=31;n_t[32]=43;n_t[33]=55;n_t[34]=67;            ///G
+n_t[35]=32;n_t[36]=44;n_t[37]=56;n_t[38]=68;            ///G#
+n_t[39]=33;n_t[40]=45;n_t[41]=57;n_t[42]=69;            ///A
+n_t[43]=34;n_t[44]=46;n_t[45]=58;n_t[46]=70;            ///A#
+n_t[47]=35;n_t[48]=47;n_t[49]=59;n_t[50]=71;            ///B
+    
+out_prog = 0;   
+    
+// ==========================================================  
+@slider  
+ CCchannel=slider2;  
+// ==========================================================  
+@sample  
+while (  
+    midirecv(mpos, msg1, msg23) ? (  
+// ========================================= For EVERY MIDI msg received  
+        msg = (msg1 / 16) | 0;  
+        channel = 1 + msg1 - (msg * 16);       
+        n_n = msg23 & 127;  
+        
+        in_range = (msg == NOTE_ON) && (channel == CCchannel || CCchannel == 0);  
+        (in_range) ? (  
+            
+         
+              n = 50;
+              while(n!==0)
+             (
+                value = n_t[n];
+                n -= 1;
+                
+                      (value==n_n) ? 
+                      (
+                      
+                      ((n >=0) && (n <=4)) ? (out_prog = PChange_C;     n=0;); 
+                      ((n >=5) && (n <=9)) ? (out_prog = PChange_C_s;   n=0;);
+                      ((n >=10) && (n <=14)) ? (out_prog = PChange_D;   n=0;);
+                      ((n >=15) && (n <=18)) ? (out_prog = PChange_D_s; n=0;);
+                      ((n >=19) && (n <=22)) ? (out_prog = PChange_E;   n=0;);
+                      ((n >=23) && (n <=26)) ? (out_prog = PChange_F;   n=0;);
+                      ((n >=27) && (n <=30)) ? (out_prog = PChange_F_s; n=0;);
+                      ((n >=31) && (n <=34)) ? (out_prog = PChange_G;   n=0;);
+                      ((n >=35) && (n <=38)) ? (out_prog = PChange_G_s; n=0;);
+                      ((n >=39) && (n <=42)) ? (out_prog = PChange_A;   n=0;);
+                      ((n >=43) && (n <=46)) ? (out_prog = PChange_A_s; n=0;);
+                      ((n >=47) && (n <=50)) ? (out_prog = PChange_B ;  n=0;);
+                      
+                      
+                      );
+                      
+                      // do something with value 
+              
+              );
+
+            msg1 = (PC * 16 + (channel-1));  
+           
+            msg2 = out_prog;  
+            
+            midisend(mpos, msg1, msg2);  
+        
+        
+        ):(
+   
+   
+              msg1 = (PC * 16 + (channel-1));  
+              msg2 = 0; 
+              midisend(mpos, msg1, msg2); 
+          );    
+    
+    );  
+);  
+

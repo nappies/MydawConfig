@@ -1,0 +1,27 @@
+"Mydaw Edition" Ableton like configuration. 
+All or almost all scripts are recasted or compiling  of reascripts by such authors as: 
+
+Aleksandr Oleynik (http://rmmedia.ru/members/9190/) 
+Archchie (http://rmmedia.ru/members/142393/)
+amagalma (https://forum.cockos.com/member.php?u=32436)
+Michael Pilyavskiy AKA @Mpl (https://github.com/MichaelPilyavskiy/ReaScripts)
+spk77 (https://forum.cockos.com/member.php?u=49553)
+EUGEN27771 (https://github.com/EUGEN27771/ReaScripts)
+X-Raym (https://github.com/X-Raym/REAPER-ReaScripts)
+kawa (http://kawa.works/reascripts)
+me2beats aka local r = reaper;  (https://github.com/me2beats/reapack)
+juliansader (https://forum.cockos.com/member.php?u=14710)
+Lokasenna (https://forum.cockos.com/member.php?u=10417)
+
+
+
+
+
+
+Inspired by 
+Kokarev Maxim (http://rmmedia.ru/members/10967/)
+Arthur McArthur (https://forum.cockos.com/member.php?u=109337)
+
+
+
+
