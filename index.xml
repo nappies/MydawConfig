@@ -16,9 +16,9 @@
         <link rel="website" href="https://sineforge.art/">Product page</link>
       </metadata>
      <version name="2.500" author="SineForge" time="03-11-2025">
-         <source platform="win64" file="reaper_MyDaw_x64.dll">https://github.com/nappies/MydawConfig/raw/refs/heads/main/reaper_MyDaw_x64.dll</source>
-		 <source platform="darwin64" file="reaper_MyDaw_x64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/main/reaper_MyDaw_x64.dylib</source>
-		 <source platform="darwin-arm64" file="reaper_MyDaw_arm64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/main/reaper_MyDaw_arm64.dylib</source>
+         <source platform="win64" file="reaper_MyDaw_x64.dll">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_x64.dll</source>
+		 <source platform="darwin64" file="reaper_MyDaw_x64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_x64.dylib</source>
+		 <source platform="darwin-arm64" file="reaper_MyDaw_arm64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_arm64.dylib</source>
       
 	  </version>
     </reapack>
