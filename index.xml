@@ -24,7 +24,7 @@
       </version>
 
       <!-- Новая версия -->
-      <version name="2.5.1" author="SineForge" time="15-01-2026">
+      <version name="2.510" author="SineForge" time="15-01-2026">
         <changelog><![CDATA[# ALS Import Update vst3 preset chunk read
 # Mouse modifiers, Fix for relative stretch editing in GodMode.
 + Code cleanup and minor changes.]]></changelog>
