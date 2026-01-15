@@ -4,7 +4,7 @@
   <!-- Scripts -->
   <category name="Extensions">
     <reapack name="MyDaw_Extension.ext" type="extension" desc="MyDaw_Extension">
-	      <metadata>
+      <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
 \widowctrl\hyphauto
@@ -15,15 +15,25 @@
 ]]></description>
         <link rel="website" href="https://sineforge.art/">Product page</link>
       </metadata>
-     <version name="2.510" author="SineForge" time="15-01-2026">
+
+      <!-- Старая версия -->
+      <version name="2.500" author="SineForge" time="03-11-2025">
          <source platform="win64" file="reaper_MyDaw_x64.dll">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_x64.dll</source>
-		 <source platform="darwin64" file="reaper_MyDaw_x64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_x64.dylib</source>
-		 <source platform="darwin-arm64" file="reaper_MyDaw_arm64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_arm64.dylib</source>
-      
-	  </version>
+         <source platform="darwin64" file="reaper_MyDaw_x64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_x64.dylib</source>
+         <source platform="darwin-arm64" file="reaper_MyDaw_arm64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_arm64.dylib</source>
+      </version>
+
+      <!-- Новая версия -->
+      <version name="2.5.1" author="SineForge" time="2026-01-15T15:50:00Z">
+        <changelog><![CDATA[# ALS Import Update vst3 preset chunk read
+# Mouse modifiers, Fix for relative stretch editing in GodMode.
++ Code cleanup and minor changes.]]></changelog>
+         <source platform="win64" file="reaper_MyDaw_x64.dll">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_x64.dll</source>
+         <source platform="darwin64" file="reaper_MyDaw_x64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_x64.dylib</source>
+         <source platform="darwin-arm64" file="reaper_MyDaw_arm64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_arm64.dylib</source>
+      </version>
+
     </reapack>
   </category>
-
-
 
 </index>
