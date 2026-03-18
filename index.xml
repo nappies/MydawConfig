@@ -38,7 +38,7 @@
         <changelog>
           <![CDATA[+ Loop points can be edited using the Mouse
           + ALS Import: Trial version now opens plugins and presets
-+ ALS Import: Support for transferring VST3 between platforms
++ ALS Import: Support open presets of VST3 between platforms
 # MIDI Editor: Fixed note selection reset when zooming the system
 # MIDI Editor: Fixed focus jumping when duplicating
 # MIDI Editor: Cursor now correctly moves to the beginning of selected notes
