@@ -33,7 +33,7 @@
          <source platform="darwin-arm64" file="reaper_MyDaw_arm64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_arm64.dylib</source>
       </version>
 
-      <!-- Новая версия 2.52-->
+      <!-- Версия 2.520 — исправлен путь установки скрипта -->
       <version name="2.520" author="SineForge" time="19-03-2026">
         <changelog>
           <![CDATA[+ Loop points can be edited using the Mouse
@@ -44,12 +44,13 @@
 # Fixed scroll jumping on MacOS
 # Fixed autoupdate link
 # Arrangement window: Fixed accidental selection of envelope points and markers when editing items
-# Fixed possible crash when using Reaper API.]]>
+# Fixed possible crash when using Reaper API
+# Fixed script install path]]>
         </changelog>
-        <source platform="win64" file="reaper_MyDaw_x64.dll">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_x64.dll</source>
-        <source platform="darwin64" file="reaper_MyDaw_x64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_x64.dylib</source>
-        <source platform="darwin-arm64" file="reaper_MyDaw_arm64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_arm64.dylib</source>
-        <source main="main" type="script" file="MyDaw/Mouse Or Pen.lua">https://github.com/nappies/MydawConfig/raw/refs/heads/master/mydaw-installer/packages/com.sineforge.mydaw/data/Scripts/MyDaw/Mouse%20Or%20Pen.lua</source>
+        <source platform="win64"         file="reaper_MyDaw_x64.dll">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_x64.dll</source>
+        <source platform="darwin64"      file="reaper_MyDaw_x64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_x64.dylib</source>
+        <source platform="darwin-arm64"  file="reaper_MyDaw_arm64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_arm64.dylib</source>
+        <source main="main" type="script" file="Mouse Or Pen.lua">https://github.com/nappies/MydawConfig/raw/refs/heads/master/mydaw-installer/packages/com.sineforge.mydaw/data/Scripts/MyDaw/Mouse%20Or%20Pen.lua</source>
       </version>
       
       
