@@ -60,7 +60,7 @@ curhandle = reaper.Mydaw_Mouse_LoadCursorFromFile(cur)
    reaper.SetMouseModifier( "MM_CTX_MIDI_CCEVT", 0, 3 ) --"MIDI CC event left click/drag" to Delete CC
    reaper.SetMouseModifier( "MM_CTX_MIDI_CCEVT", 4, 20 ) ---For Alt CC EVENT -- Draw/edit CC events ignoring selection and snap
    
-   reaper.SetMouseModifier( "MM_CTX_ENVSEG", 0, 3  ) --"Envelope segment left drag" to "Freehand draw envelope" reaper.Main_OnCommand(39170, 0)
+   reaper.SetMouseModifier( "MM_CTX_ENVSEG", 0, 10  ) --"Envelope segment left drag" to "Freehand draw envelope" reaper.Main_OnCommand(39170, 0)
    reaper.SetMouseModifier( "MM_CTX_ENVSEG", 4,4)  --- Mouse + alt to Draw no Snapping
    reaper.SetMouseModifier( "MM_CTX_ENVPT", 0, 3 ) --"Envelope point left drag" to "Freehand draw envelope" reaper.Main_OnCommand(39141, 0)
    
