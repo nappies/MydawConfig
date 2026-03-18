@@ -1,0 +1,80 @@
+# Trigger: create a GitHub Release in the MydawConfig public repo.
+# Effect:
+#   1. Current release files (no tag)  →  renamed to _old
+#   2. Beta files (_beta)              →  renamed to release (no tag)
+#
+# Example (Windows installer):
+#   MyDaw-Windows-x64.exe      (stable)  →  MyDaw-Windows-x64_old.exe
+#   MyDaw-Windows-x64_beta.exe (beta)    →  MyDaw-Windows-x64.exe  (new stable)
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: write
+
+jobs:
+  promote-beta-to-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout MydawConfig
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+
+    - name: Promote beta assets to release
+      run: |
+        shopt -s nullglob
+
+        promote() {
+          local ext="$1"          # e.g. "exe"  (without the dot)
+          echo "--- Processing .$ext files ---"
+
+          for beta_file in *_beta."$ext"; do
+            # Derive stable and old names from the beta file name
+            base="${beta_file%_beta.$ext}"
+            release_file="${base}.${ext}"
+            old_file="${base}_old.${ext}"
+
+            echo "Beta file found: $beta_file"
+
+            # Step 1 — demote current stable → _old (if it exists)
+            if [ -f "$release_file" ]; then
+              echo "  Renaming $release_file  →  $old_file"
+              # FIX: Added -f to force overwrite if an _old file already exists from a previous release
+              git mv -f "$release_file" "$old_file"
+            else
+              echo "  No existing stable file $release_file found; skipping demotion."
+            fi
+
+            # Step 2 — promote beta → stable
+            echo "  Renaming $beta_file  →  $release_file"
+            # FIX: Added -f to force overwrite just in case
+            git mv -f "$beta_file" "$release_file"
+          done
+        }
+
+        # Installers
+        promote "exe"
+        promote "zip"
+
+        # Artifacts
+        promote "dll"
+        promote "dylib"
+
+    - name: Commit and Push
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+        git add .
+
+        if git diff --staged --quiet; then
+          echo "No beta files found – nothing to promote."
+        else
+          git commit -m "release: promote beta → stable, stable → old  (${{ github.ref_name }})"
+          git push
+        fi
