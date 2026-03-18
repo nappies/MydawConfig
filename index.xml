@@ -37,6 +37,7 @@
       <version name="2.520" author="SineForge" time="19-03-2026">
         <changelog>
           <![CDATA[+ Loop points can be edited using the Mouse
+          + ALS Import: Trial version now opens plugins and presets
 + ALS Import: Support for transferring VST3 between platforms
 # MIDI Editor: Fixed note selection reset when zooming the system
 # MIDI Editor: Fixed focus jumping when duplicating
