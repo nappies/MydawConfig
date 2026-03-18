@@ -50,7 +50,6 @@
         <source platform="win64"         file="reaper_MyDaw_x64.dll">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_x64.dll</source>
         <source platform="darwin64"      file="reaper_MyDaw_x64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_x64.dylib</source>
         <source platform="darwin-arm64"  file="reaper_MyDaw_arm64.dylib">https://github.com/nappies/MydawConfig/raw/refs/heads/master/reaper_MyDaw_arm64.dylib</source>
-        <source main="main" type="script" file="Mouse Or Pen.lua">https://github.com/nappies/MydawConfig/raw/refs/heads/master/mydaw-installer/packages/com.sineforge.mydaw/data/Scripts/MyDaw/Mouse%20Or%20Pen.lua</source>
       </version>
       
       
